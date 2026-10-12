@@ -7,92 +7,85 @@
 <meta name="description" content="Every line of a 376-line C program explained: 52 locations, plain Dijkstra and bidirectional Dijkstra on a 13x4 grid.">
 <style>
 :root{
-  --bg:#ffffff; --surface:#f6f7f9; --code:#f2f4f7; --border:#e2e5ea;
-  --text:#14161a; --muted:#575e6b; --accent:#0b6e8f;
-  --start:#8a6100; --goal:#9c2a7a; --route:#1d7a3e;
-  --edge:#c9cfd8; --hl:#e8f2f6; --ring:#0b6e8f;
+  --bg:#09090b; --code:#0d0d10; --border:#22252a; --edge:#5c636c;
+  --text:#e9eaec; --muted:#8b9098; --hl:#17181c; --sel:#3f3f46; --ring:#e9eaec;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
-@media (prefers-color-scheme:dark){
+@media (prefers-color-scheme:light){
   :root{
-    --bg:#0f1115; --surface:#161a21; --code:#12161b; --border:#272d37;
-    --text:#e7e9ee; --muted:#9aa2b1; --accent:#5cc8e8;
-    --start:#ffd35c; --goal:#ff86c8; --route:#61e08e;
-    --edge:#39414d; --hl:#17242e; --ring:#5cc8e8;
+    --bg:#ffffff; --code:#f4f4f5; --border:#e4e4e7; --edge:#858b93;
+    --text:#18181b; --muted:#5f6368; --hl:#f0f0f1; --sel:#d4d4d8; --ring:#18181b;
   }
 }
 *{box-sizing:border-box}
 html{scroll-behavior:auto}
-body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-text-size-adjust:100%;caret-color:var(--accent)}
-::selection{background:var(--accent);color:var(--bg)}
-a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
-a:hover{text-decoration-style:solid}
-:focus-visible{outline:3px solid var(--ring);outline-offset:2px;border-radius:3px}
-*{scrollbar-color:var(--border) transparent;scrollbar-width:thin}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%;caret-color:var(--text)}
+::selection{background:var(--sel);color:var(--text)}
+a{color:inherit;text-decoration:underline;text-decoration-color:var(--muted);text-decoration-thickness:1px;text-underline-offset:2px}
+a:hover{text-decoration-color:var(--text)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:0}
+*{scrollbar-color:var(--edge) transparent;scrollbar-width:thin}
 *::-webkit-scrollbar{width:11px;height:11px}
 *::-webkit-scrollbar-track{background:transparent}
-*::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;border:2px solid var(--bg)}
+*::-webkit-scrollbar-thumb{background:var(--edge);border:2px solid var(--bg)}
 :target,[id]{scroll-margin-top:5.5rem}
-.skip{position:absolute;left:-9999px;top:0;background:var(--surface);padding:.6rem 1rem;border:1px solid var(--border);border-radius:0 0 8px 0}
+.skip{position:absolute;left:-9999px;top:0;background:var(--bg);padding:.55rem 1rem;border:1px solid var(--text)}
 .skip:focus{left:0;z-index:50}
 .wrap{max-width:75ch;margin:0 auto;padding:0 1.15rem}
-.site-head{border-bottom:1px solid var(--border);background:var(--surface);padding:2.4rem 0 1.8rem}
-.site-head h1{font-size:clamp(1.5rem,1.1rem + 1.6vw,2.1rem);line-height:1.2;margin:0 0 .7rem;letter-spacing:-.01em}
-.site-head p{margin:.5rem 0;max-width:70ch;color:var(--text)}
-.site-head .meta{color:var(--muted);font-size:.92rem}
-.site-head code{font-family:var(--mono);font-size:.9em;background:var(--code);border:1px solid var(--border);border-radius:5px;padding:.1em .38em}
-.head-links{margin-top:1rem;font-size:.95rem}
-h2,h3{line-height:1.25;letter-spacing:-.005em}
-h2{font-size:1.4rem;margin:3.2rem 0 .9rem;padding-bottom:.35rem;border-bottom:1px solid var(--border)}
-h3{font-size:1.12rem;margin:2.6rem 0 .7rem;font-family:var(--mono);font-weight:600}
-h3.prose{font-family:var(--sans)}
+.site-head{border-bottom:1px solid var(--border);padding:2.6rem 0 1.9rem}
+.site-head h1{font-family:var(--mono);font-weight:600;font-size:clamp(2rem,1.35rem + 2.2vw,2.5rem);line-height:1.15;margin:0 0 .85rem;letter-spacing:-.025em}
+.site-head p{margin:.5rem 0;max-width:70ch}
+.site-head .meta{color:var(--muted);font-size:.88rem}
+.site-head code{font-family:var(--mono);font-size:.9em;background:var(--code);border:1px solid var(--border);padding:.08em .36em}
+.head-links{margin-top:1.15rem;font-size:.95rem}
+h2,h3{line-height:1.25;letter-spacing:-.01em;font-family:var(--mono);font-weight:600}
+h2{font-size:1.5625rem;margin:3.4rem 0 1rem;padding-bottom:.45rem;border-bottom:1px solid var(--border);letter-spacing:-.022em}
+h3{font-size:1.25rem;margin:2.4rem 0 .7rem}
+h3.prose{font-family:var(--sans);font-size:1.25rem;letter-spacing:-.01em;font-weight:700}
 p{margin:0 0 1rem}
 .measure{max-width:70ch}
 .layout{padding:1.4rem 0 4rem}
-.lede{font-size:1.05rem;color:var(--muted)}
-.grid-rule{font-family:var(--mono);font-size:.87rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;overflow-x:auto;white-space:pre;margin:0 0 1.2rem}
+.grid-rule{font-family:var(--mono);font-size:.85rem;background:var(--code);border:1px solid var(--border);padding:.8rem .9rem;overflow-x:auto;white-space:pre;margin:0 0 1.2rem}
 code{font-family:var(--mono);font-size:.9em}
-p code,li code{background:var(--code);border:1px solid var(--border);border-radius:5px;padding:.06em .34em}
-pre.term{font-family:var(--mono);font-size:.82rem;line-height:1.45;background:var(--code);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;overflow-x:auto;white-space:pre;margin:0 0 1rem}
-figure.grid-fig{margin:0 0 1.4rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+p code,li code{background:var(--code);border:1px solid var(--border);padding:.06em .34em}
+pre.term{font-family:var(--mono);font-size:.8rem;line-height:1.5;background:var(--code);color:var(--text);border:1px solid var(--border);padding:1rem 1.1rem;overflow-x:auto;white-space:pre;margin:0 0 1rem}
+figure.grid-fig{margin:0 0 1.4rem;padding:1rem;border:1px solid var(--border)}
 figure.grid-fig svg{display:block;width:100%;max-width:320px;height:auto;margin:0 auto}
-figure.grid-fig .edge{stroke:var(--edge);stroke-width:1.5}
-figure.grid-fig .node{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
-figure.grid-fig .node.s{stroke:var(--start);stroke-width:2.5}
-figure.grid-fig .node.g{stroke:var(--goal);stroke-width:2.5}
-figure.grid-fig .lbl{font-family:var(--mono);font-size:13px;fill:var(--text)}
-figure.grid-fig .lbl.s{fill:var(--start)}
-figure.grid-fig .lbl.g{fill:var(--goal)}
-figcaption{color:var(--muted);font-size:.87rem;line-height:1.5;margin-top:.6rem}
+figure.grid-fig .edge{stroke:var(--edge);stroke-width:1.25}
+figure.grid-fig .node{fill:var(--bg);stroke:var(--edge);stroke-width:1.25}
+figure.grid-fig .node.s{stroke:var(--text);stroke-width:2.5}
+figure.grid-fig .node.g{fill:var(--text);stroke:var(--text);stroke-width:2.5}
+figure.grid-fig .lbl{font-family:var(--mono);font-size:13px;fill:var(--muted)}
+figure.grid-fig .lbl.s{fill:var(--text);font-weight:700}
+figure.grid-fig .lbl.g{fill:var(--bg);font-weight:700}
+figcaption{color:var(--muted);font-size:.85rem;line-height:1.6;margin-top:.7rem}
 .unit{margin:0 0 2.2rem}
-.unit .purpose{color:var(--text);margin:0 0 1rem}
-.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:.7rem 0;overflow-x:auto;margin:0 0 1rem;font-family:var(--mono);font-size:.82rem;line-height:1.55}
+.code{background:var(--code);border:1px solid var(--border);padding:.7rem 0;overflow-x:auto;margin:0 0 1rem;font-family:var(--mono);font-size:.8rem;line-height:1.6}
 .cl{display:block;padding:0 1rem;white-space:pre;transition:background-color 110ms linear}
 .cl .ln{display:inline-block;width:3.2ch;margin-right:1.1rem;text-align:right;color:var(--muted);user-select:none;-webkit-user-select:none}
 .cl .ct{white-space:pre}
 .cl.hl{background:var(--hl)}
 .notes{list-style:none;margin:0;padding:0}
-.note{display:grid;grid-template-columns:4.6rem 1fr;gap:.4rem 1rem;padding:.5rem .6rem;border-radius:8px;transition:background-color 110ms linear}
+.note{display:grid;grid-template-columns:4.6rem 1fr;gap:.4rem 1rem;padding:.5rem .6rem;transition:background-color 110ms linear}
 .note:hover,.note:focus-within{background:var(--hl)}
 .note .nl{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
-.note .nl a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--border)}
-.note .nl a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.note .nl a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--edge)}
+.note .nl a:hover{color:var(--text);border-bottom-color:var(--text)}
 .note .nt{margin:0}
-.note .nt code{background:var(--code);border:1px solid var(--border);border-radius:5px;padding:.02em .3em}
-.note:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+.note .nt code{background:var(--code);border:1px solid var(--border);padding:.02em .3em}
 @media (max-width:560px){.note{grid-template-columns:3.4rem 1fr;gap:.3rem .6rem}}
 .toc-desktop{display:none}
 .toc-mobile{padding:.7rem 0 0}
-.toc-mobile summary{cursor:pointer;font-weight:600;font-family:var(--mono);font-size:.9rem;padding:.55rem .7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.toc-mobile summary{cursor:pointer;font-weight:600;font-family:var(--mono);font-size:.8rem;padding:.6rem .7rem;border:1px solid var(--border)}
 .toc-mobile nav{padding:.6rem .2rem}
 .toc ol{list-style:none;margin:0;padding:0}
 .toc li{margin:0}
-.toc a{display:block;padding:.28rem .55rem;color:var(--muted);text-decoration:none;font-size:.9rem;border-radius:5px}
+.toc a{display:block;padding:.3rem .55rem;color:var(--muted);text-decoration:none;font-family:var(--mono);font-size:.8rem}
 .toc a:hover{color:var(--text)}
-.toc a[aria-current="true"]{color:var(--accent);font-weight:600;background:var(--surface)}
+.toc a[aria-current="true"]{color:var(--text);font-weight:600;background:var(--hl)}
 .toc ol ol{margin-left:.65rem;padding-left:.35rem}
-.toc ol ol a{font-size:.84rem}
+.toc ol ol a{font-size:.78rem}
 @media (min-width:1024px){
   .wrap{max-width:1080px}
   .toc-mobile{display:none}
@@ -104,11 +97,11 @@ figcaption{color:var(--muted);font-size:.87rem;line-height:1.5;margin-top:.6rem}
   *{transition:none !important;scroll-behavior:auto !important}
 }
 .two-col{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:.9rem;margin:0 0 1.2rem}
-th,td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}
-th{color:var(--muted);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.88rem;margin:0 0 1.2rem}
+th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em}
 td.num,th.num{font-family:var(--mono)}
-footer.site-foot{border-top:1px solid var(--border);background:var(--surface);padding:1.8rem 0 2.6rem;color:var(--muted);font-size:.9rem}
+footer.site-foot{border-top:1px solid var(--border);padding:1.9rem 0 2.6rem;color:var(--muted);font-size:.88rem}
 footer.site-foot p{max-width:70ch}
 </style>
 </head>
@@ -265,7 +258,7 @@ The number on a road is its distance.
 Goodbye.
 </pre>
     <div class="measure">
-      <p>The first map appears before any search. The second is drawn after the route is found, with the legend and the route coloured. The numbers are identical in both — only the colours change.</p>
+      <p>The first map appears before any search. The second is drawn after the route is found; in a colour terminal the legend and the route are also tinted. With the colour escapes stripped, the two maps are character for character identical — the second simply gains the legend line printed under its heading.</p>
     </div>
 
     <h2 id="grid">The grid model</h2>
@@ -470,7 +463,7 @@ Goodbye.
 <text class="lbl g" x="400" y="694" text-anchor="middle" dominant-baseline="central">M4</text>
 </g>
 </svg>
-      <figcaption>13 rows &times; 4 columns = 52 locations, joined as a grid. Right-road weight: <code>3 + ((r&times;2 + c&times;3) mod 7)</code>. Down-road weight: <code>3 + ((r&times;3 + c&times;5) mod 7)</code>. 87 roads in all: 39 across, 48 down. <code>A1</code> is the start (yellow) and <code>M4</code> the goal (magenta).</figcaption>
+      <figcaption>13 rows &times; 4 columns = 52 locations, joined as a grid. Right-road weight: <code>3 + ((r&times;2 + c&times;3) mod 7)</code>. Down-road weight: <code>3 + ((r&times;3 + c&times;5) mod 7)</code>. 87 roads in all: 39 across, 48 down. <code>A1</code> is the start, drawn as a heavier ring, and <code>M4</code> the goal, drawn solid.</figcaption>
     </figure>
     <div class="measure">
       <p class="grid-rule">number = row * 4 + column        (both counting from 0)
@@ -488,7 +481,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
     </div>
 <section id="u-setup" class="unit" aria-labelledby="u-setup-h">
 <h3 id="u-setup-h" class="prose">Includes, colour macros, and globals</h3>
-<p class="purpose">Pull in the two standard headers the program needs, define the map size and the values it uses everywhere, and declare the two arrays that hold the whole problem.</p>
+<p>Pull in the two standard headers the program needs, define the map size and the values it uses everywhere, and declare the two arrays that hold the whole problem.</p>
 <div class="code" role="group" aria-label="File header, includes, colour macros, and globals source code">
 <span class="cl" id="L1"><span class="ln" aria-hidden="true">1</span><span class="ct">/*</span></span>
 <span class="cl" id="L2"><span class="ln" aria-hidden="true">2</span><span class="ct"> * DSAL Mini Project : Shortest Path using Dijkstra's Algorithm</span></span>
@@ -531,7 +524,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 <li class="note" data-lines="17"><span class="nl"><a href="#L17">17</a></span><span class="nt"><code>N</code> is <code>ROWS * COLS</code> = 52. It is written as an expression (in parentheses) rather than the literal 52 so the size can never drift from the grid dimensions; every loop bound later uses <code>N</code>.</span></li>
 <li class="note" data-lines="18"><span class="nl"><a href="#L18">18</a></span><span class="nt"><code>INF</code> is the “unknown distance” sentinel. Unreached places start at one million so that any real distance (a single road is at most 9) is smaller. It only has to exceed the largest possible route total, and a million is far beyond the whole map added up.</span></li>
 <li class="note" data-lines="20"><span class="nl"><a href="#L20">20</a></span><span class="nt">A plain comment labelling the block of terminal escape codes below.</span></li>
-<li class="note" data-lines="21 22 23 24 25 26 27"><span class="nl"><a href="#L21">21–27</a></span><span class="nt">One macro per terminal colour. <code>"\033"</code> is the ESC character (octal 033); the rest tells the terminal what to do, for example <code>"\033[36m"</code> means “switch to cyan”. <code>RESET</code> (<code>"\033[0m"</code>) turns colour off again. These are ordinary strings, so printing them is just printing text — the terminal is what interprets them. <code>BOLD</code> is the only one that is not a colour. They are also why the page keeps the same colours as the program: cyan roads, yellow start, magenta goal, green route.</span></li>
+<li class="note" data-lines="21 22 23 24 25 26 27"><span class="nl"><a href="#L21">21–27</a></span><span class="nt">One macro per terminal colour. <code>"\033"</code> is the ESC character (octal 033); the rest tells the terminal what to do, for example <code>"\033[36m"</code> means “switch to cyan”. <code>RESET</code> (<code>"\033[0m"</code>) turns colour off again. These are ordinary strings, so printing them is just printing text — the terminal is what interprets them. <code>BOLD</code> is the only one that is not a colour. These belong to the program’s terminal output only: this walkthrough is deliberately monochrome, so the page never competes with the code it is describing.</span></li>
 <li class="note" data-lines="29"><span class="nl"><a href="#L29">29</a></span><span class="nt">The name table: 52 slots of 4 bytes each, enough to hold up to three name characters plus the terminating <code>\0</code>. Filled in by <code>buildNames</code>.</span></li>
 <li class="note" data-lines="30"><span class="nl"><a href="#L30">30</a></span><span class="nt">The adjacency matrix, 52 by 52. The comment records the convention the entire program depends on: <code>0</code> means “no road”, and any other value is that road’s distance.</span></li>
 </ul>
@@ -539,7 +532,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-buildnames" class="unit" aria-labelledby="u-buildnames-h">
 <h3 id="u-buildnames-h">buildNames</h3>
-<p class="purpose">Give every location its printed name, <code>A1</code> through <code>M4</code>, by walking the grid row by row.</p>
+<p>Give every location its printed name, <code>A1</code> through <code>M4</code>, by walking the grid row by row.</p>
 <div class="code" role="group" aria-label="buildNames source code">
 <span class="cl" id="L32"><span class="ln" aria-hidden="true">32</span><span class="ct">/* name each location: row * 4 + column */</span></span>
 <span class="cl" id="L33"><span class="ln" aria-hidden="true">33</span><span class="ct">void buildNames(void) {</span></span>
@@ -568,7 +561,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-buildgraph" class="unit" aria-labelledby="u-buildgraph-h">
 <h3 id="u-buildgraph-h">buildGraph</h3>
-<p class="purpose">Join every location to its right and below neighbour, storing a formula-generated distance on both ends of each road.</p>
+<p>Join every location to its right and below neighbour, storing a formula-generated distance on both ends of each road.</p>
 <div class="code" role="group" aria-label="buildGraph source code">
 <span class="cl" id="L43"><span class="ln" aria-hidden="true">43</span><span class="ct">/* join each location to its right and below neighbour */</span></span>
 <span class="cl" id="L44"><span class="ln" aria-hidden="true">44</span><span class="ct">void buildGraph(void) {</span></span>
@@ -612,7 +605,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-console" class="unit" aria-labelledby="u-console-h">
 <h3 id="u-console-h">setupConsole</h3>
-<p class="purpose">On Windows only, switch the console to UTF-8 and turn on virtual-terminal processing so the box characters and colour escapes display correctly.</p>
+<p>On Windows only, switch the console to UTF-8 and turn on virtual-terminal processing so the box characters and colour escapes display correctly.</p>
 <div class="code" role="group" aria-label="setupConsole source code">
 <span class="cl" id="L62"><span class="ln" aria-hidden="true">62</span><span class="ct">/* let the console print UTF-8 and colours; does nothing on other systems */</span></span>
 <span class="cl" id="L63"><span class="ln" aria-hidden="true">63</span><span class="ct">void setupConsole(void) {</span></span>
@@ -643,7 +636,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-namecolor" class="unit" aria-labelledby="u-namecolor-h">
 <h3 id="u-namecolor-h">nameColor</h3>
-<p class="purpose">Return the escape string for a place’s role, so <code>printGraph</code> can colour the label.</p>
+<p>Return the escape string for a place’s role, so <code>printGraph</code> can colour the label.</p>
 <div class="code" role="group" aria-label="nameColor source code">
 <span class="cl" id="L74"><span class="ln" aria-hidden="true">74</span><span class="ct">/* colour for one place: 2 = start, 3 = goal, 1 = on the route, 0 = ordinary */</span></span>
 <span class="cl" id="L75"><span class="ln" aria-hidden="true">75</span><span class="ct">const char *nameColor(int m) {</span></span>
@@ -667,7 +660,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-printgraph" class="unit" aria-labelledby="u-printgraph-h">
 <h3 id="u-printgraph-h">printGraph</h3>
-<p class="purpose">Draw the whole map with box-drawing characters and each road’s weight, optionally colouring the start, the goal and the route.</p>
+<p>Draw the whole map with box-drawing characters and each road’s weight, optionally colouring the start, the goal and the route.</p>
 <div class="code" role="group" aria-label="printGraph source code">
 <span class="cl" id="L82"><span class="ln" aria-hidden="true">82</span><span class="ct">/* draw the map; mark[] says which place is the start, the goal or on the route */</span></span>
 <span class="cl" id="L83"><span class="ln" aria-hidden="true">83</span><span class="ct">void printGraph(int mark[]) {</span></span>
@@ -769,7 +762,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-findnode" class="unit" aria-labelledby="u-findnode-h">
 <h3 id="u-findnode-h">findNode</h3>
-<p class="purpose">Turn a typed name such as <code>b2</code> or <code>B2</code> into a location number 0 to 51, or <code>-1</code> when the name is not a real location.</p>
+<p>Turn a typed name such as <code>b2</code> or <code>B2</code> into a location number 0 to 51, or <code>-1</code> when the name is not a real location.</p>
 <div class="code" role="group" aria-label="findNode source code">
 <span class="cl" id="L132"><span class="ln" aria-hidden="true">132</span><span class="ct">/* "b2" or "B2" -&gt; location number, or -1 */</span></span>
 <span class="cl" id="L133"><span class="ln" aria-hidden="true">133</span><span class="ct">int findNode(const char *name) {</span></span>
@@ -808,7 +801,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-printpath" class="unit" aria-labelledby="u-printpath-h">
 <h3 id="u-printpath-h">printPath</h3>
-<p class="purpose">Print a route as <code>A1 -&gt; B1 -&gt; ...</code> in the green route colour.</p>
+<p>Print a route as <code>A1 -&gt; B1 -&gt; ...</code> in the green route colour.</p>
 <div class="code" role="group" aria-label="printPath source code">
 <span class="cl" id="L148"><span class="ln" aria-hidden="true">148</span><span class="ct"></span></span>
 <span class="cl" id="L149"><span class="ln" aria-hidden="true">149</span><span class="ct">void printPath(int path[], int length) {</span></span>
@@ -837,7 +830,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-dijkstra" class="unit" aria-labelledby="u-dijkstra-h">
 <h3 id="u-dijkstra-h">dijkstra</h3>
-<p class="purpose">Find the cheapest route from <code>start</code> to <code>goal</code>, recording each place’s predecessor so the route can be rebuilt afterwards.</p>
+<p>Find the cheapest route from <code>start</code> to <code>goal</code>, recording each place’s predecessor so the route can be rebuilt afterwards.</p>
 <div class="code" role="group" aria-label="dijkstra source code">
 <span class="cl" id="L159"><span class="ln" aria-hidden="true">159</span><span class="ct">/* O(N^2): settle the cheapest unfinished location each round, relax its neighbours */</span></span>
 <span class="cl" id="L160"><span class="ln" aria-hidden="true">160</span><span class="ct">int dijkstra(int start, int goal, int prev[], int *settledCount) {</span></span>
@@ -906,7 +899,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-rebuild" class="unit" aria-labelledby="u-rebuild-h">
 <h3 id="u-rebuild-h">rebuildPath</h3>
-<p class="purpose">Walk the <code>prev[]</code> chain backwards from the goal to the start, then flip it into a forward route.</p>
+<p>Walk the <code>prev[]</code> chain backwards from the goal to the start, then flip it into a forward route.</p>
 <div class="code" role="group" aria-label="rebuildPath source code">
 <span class="cl" id="L195"><span class="ln" aria-hidden="true">195</span><span class="ct"></span></span>
 <span class="cl" id="L196"><span class="ln" aria-hidden="true">196</span><span class="ct">int rebuildPath(int start, int goal, int prev[], int path[]) {</span></span>
@@ -945,7 +938,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-bidir" class="unit" aria-labelledby="u-bidir-h">
 <h3 id="u-bidir-h">bidirectionalDijkstra</h3>
-<p class="purpose">Search outward from the start and the goal at the same time, remember the cheapest place where the two searches meet, and rebuild the route through it.</p>
+<p>Search outward from the start and the goal at the same time, remember the cheapest place where the two searches meet, and rebuild the route through it.</p>
 <div class="code" role="group" aria-label="bidirectionalDijkstra source code">
 <span class="cl" id="L212"><span class="ln" aria-hidden="true">212</span><span class="ct">/* search from both ends; prevB[x] points towards the goal */</span></span>
 <span class="cl" id="L213"><span class="ln" aria-hidden="true">213</span><span class="ct">int bidirectionalDijkstra(int start, int goal, int path[], int *length,</span></span>
@@ -1102,7 +1095,7 @@ road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
 
 <section id="u-main" class="unit" aria-labelledby="u-main-h">
 <h3 id="u-main-h">main</h3>
-<p class="purpose">Set up and print the map, then repeatedly read two locations, run both searches, print their routes and costs, and draw the chosen route on the map.</p>
+<p>Set up and print the map, then repeatedly read two locations, run both searches, print their routes and costs, and draw the chosen route on the map.</p>
 <div class="code" role="group" aria-label="main source code">
 <span class="cl" id="L295"><span class="ln" aria-hidden="true">295</span><span class="ct"></span></span>
 <span class="cl" id="L296"><span class="ln" aria-hidden="true">296</span><span class="ct">int main(void) {</span></span>
