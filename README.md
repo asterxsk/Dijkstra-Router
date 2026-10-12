@@ -316,7 +316,7 @@ dsal/
 
 - [docs/index.html](docs/index.html)
 
-It can also be published with GitHub Pages: open **Settings → Pages**, set **Branch** to `main` and the folder to `/docs`, then save. Once enabled the site is at:
+It is published with GitHub Pages, served straight from the `docs` folder on `main` (that setting lives under **Settings → Pages** if you ever need to change it):
 
 - https://asterxsk.github.io/Dijkstra-Router/
 
