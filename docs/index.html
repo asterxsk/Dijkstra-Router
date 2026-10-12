@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>main.c, line by line — Dijkstra Router</title>
+<meta name="description" content="Every line of a 376-line C program explained: 52 locations, plain Dijkstra and bidirectional Dijkstra on a 13x4 grid.">
+<style>
+:root{
+  --bg:#ffffff; --surface:#f6f7f9; --code:#f2f4f7; --border:#e2e5ea;
+  --text:#14161a; --muted:#575e6b; --accent:#0b6e8f;
+  --start:#8a6100; --goal:#9c2a7a; --route:#1d7a3e;
+  --edge:#c9cfd8; --hl:#e8f2f6; --ring:#0b6e8f;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1115; --surface:#161a21; --code:#12161b; --border:#272d37;
+    --text:#e7e9ee; --muted:#9aa2b1; --accent:#5cc8e8;
+    --start:#ffd35c; --goal:#ff86c8; --route:#61e08e;
+    --edge:#39414d; --hl:#17242e; --ring:#5cc8e8;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-text-size-adjust:100%;caret-color:var(--accent)}
+::selection{background:var(--accent);color:var(--bg)}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+a:hover{text-decoration-style:solid}
+:focus-visible{outline:3px solid var(--ring);outline-offset:2px;border-radius:3px}
+*{scrollbar-color:var(--border) transparent;scrollbar-width:thin}
+*::-webkit-scrollbar{width:11px;height:11px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;border:2px solid var(--bg)}
+:target,[id]{scroll-margin-top:5.5rem}
+.skip{position:absolute;left:-9999px;top:0;background:var(--surface);padding:.6rem 1rem;border:1px solid var(--border);border-radius:0 0 8px 0}
+.skip:focus{left:0;z-index:50}
+.wrap{max-width:75ch;margin:0 auto;padding:0 1.15rem}
+.site-head{border-bottom:1px solid var(--border);background:var(--surface);padding:2.4rem 0 1.8rem}
+.site-head h1{font-size:clamp(1.5rem,1.1rem + 1.6vw,2.1rem);line-height:1.2;margin:0 0 .7rem;letter-spacing:-.01em}
+.site-head p{margin:.5rem 0;max-width:70ch;color:var(--text)}
+.site-head .meta{color:var(--muted);font-size:.92rem}
+.site-head code{font-family:var(--mono);font-size:.9em;background:var(--code);border:1px solid var(--border);border-radius:5px;padding:.1em .38em}
+.head-links{margin-top:1rem;font-size:.95rem}
+h2,h3{line-height:1.25;letter-spacing:-.005em}
+h2{font-size:1.4rem;margin:3.2rem 0 .9rem;padding-bottom:.35rem;border-bottom:1px solid var(--border)}
+h3{font-size:1.12rem;margin:2.6rem 0 .7rem;font-family:var(--mono);font-weight:600}
+h3.prose{font-family:var(--sans)}
+p{margin:0 0 1rem}
+.measure{max-width:70ch}
+.layout{padding:1.4rem 0 4rem}
+.lede{font-size:1.05rem;color:var(--muted)}
+.grid-rule{font-family:var(--mono);font-size:.87rem;background:var(--code);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem;overflow-x:auto;white-space:pre;margin:0 0 1.2rem}
+code{font-family:var(--mono);font-size:.9em}
+p code,li code{background:var(--code);border:1px solid var(--border);border-radius:5px;padding:.06em .34em}
+pre.term{font-family:var(--mono);font-size:.82rem;line-height:1.45;background:var(--code);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;overflow-x:auto;white-space:pre;margin:0 0 1rem}
+figure.grid-fig{margin:0 0 1.4rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+figure.grid-fig svg{display:block;width:100%;max-width:320px;height:auto;margin:0 auto}
+figure.grid-fig .edge{stroke:var(--edge);stroke-width:1.5}
+figure.grid-fig .node{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
+figure.grid-fig .node.s{stroke:var(--start);stroke-width:2.5}
+figure.grid-fig .node.g{stroke:var(--goal);stroke-width:2.5}
+figure.grid-fig .lbl{font-family:var(--mono);font-size:13px;fill:var(--text)}
+figure.grid-fig .lbl.s{fill:var(--start)}
+figure.grid-fig .lbl.g{fill:var(--goal)}
+figcaption{color:var(--muted);font-size:.87rem;line-height:1.5;margin-top:.6rem}
+.unit{margin:0 0 2.2rem}
+.unit .purpose{color:var(--text);margin:0 0 1rem}
+.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:.7rem 0;overflow-x:auto;margin:0 0 1rem;font-family:var(--mono);font-size:.82rem;line-height:1.55}
+.cl{display:block;padding:0 1rem;white-space:pre;transition:background-color 110ms linear}
+.cl .ln{display:inline-block;width:3.2ch;margin-right:1.1rem;text-align:right;color:var(--muted);user-select:none;-webkit-user-select:none}
+.cl .ct{white-space:pre}
+.cl.hl{background:var(--hl)}
+.notes{list-style:none;margin:0;padding:0}
+.note{display:grid;grid-template-columns:4.6rem 1fr;gap:.4rem 1rem;padding:.5rem .6rem;border-radius:8px;transition:background-color 110ms linear}
+.note:hover,.note:focus-within{background:var(--hl)}
+.note .nl{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.note .nl a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--border)}
+.note .nl a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.note .nt{margin:0}
+.note .nt code{background:var(--code);border:1px solid var(--border);border-radius:5px;padding:.02em .3em}
+.note:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+@media (max-width:560px){.note{grid-template-columns:3.4rem 1fr;gap:.3rem .6rem}}
+.toc-desktop{display:none}
+.toc-mobile{padding:.7rem 0 0}
+.toc-mobile summary{cursor:pointer;font-weight:600;font-family:var(--mono);font-size:.9rem;padding:.55rem .7rem;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.toc-mobile nav{padding:.6rem .2rem}
+.toc ol{list-style:none;margin:0;padding:0}
+.toc li{margin:0}
+.toc a{display:block;padding:.28rem .55rem;color:var(--muted);text-decoration:none;font-size:.9rem;border-radius:5px}
+.toc a:hover{color:var(--text)}
+.toc a[aria-current="true"]{color:var(--accent);font-weight:600;background:var(--surface)}
+.toc ol ol{margin-left:.65rem;padding-left:.35rem}
+.toc ol ol a{font-size:.84rem}
+@media (min-width:1024px){
+  .wrap{max-width:1080px}
+  .toc-mobile{display:none}
+  .layout{display:grid;grid-template-columns:15.5rem minmax(0,1fr);gap:2.6rem;align-items:start}
+  .toc-desktop{display:block;position:sticky;top:1.2rem;max-height:calc(100vh - 2.4rem);overflow-y:auto;padding-right:.4rem}
+  .content{max-width:75ch}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;scroll-behavior:auto !important}
+}
+.two-col{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;margin:0 0 1.2rem}
+th,td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td.num,th.num{font-family:var(--mono)}
+footer.site-foot{border-top:1px solid var(--border);background:var(--surface);padding:1.8rem 0 2.6rem;color:var(--muted);font-size:.9rem}
+footer.site-foot p{max-width:70ch}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <div class="wrap">
+    <h1>main.c, line by line</h1>
+    <p>A single C file that builds a 13&nbsp;&times;&nbsp;4 map of 52 locations and finds the shortest route between two of them twice over — once with plain Dijkstra, once with a bidirectional search from both ends.</p>
+    <p class="meta">C, 376 lines, standard headers only (<code>stdio.h</code> and <code>string.h</code>; <code>windows.h</code> on Windows just for the console). Build with <code>gcc -Wall -Wextra main.c -o main</code> and run <code>./main</code> (Windows: <code>main.exe</code>).</p>
+    <p class="head-links"><a href="../README.md">Back to the README</a></p>
+  </div>
+</header>
+<div class="wrap layout">
+  <nav class="toc toc-desktop" aria-label="On this page">
+<ol>
+<li><a data-toc href="#output">What it prints</a></li>
+<li><a data-toc href="#grid">The grid model</a></li>
+<li><a data-toc href="#walkthrough">Line by line</a>
+<ol>
+<li><a data-toc href="#u-setup">Includes, macros, globals</a></li>
+<li><a data-toc href="#u-buildnames">buildNames</a></li>
+<li><a data-toc href="#u-buildgraph">buildGraph</a></li>
+<li><a data-toc href="#u-console">setupConsole</a></li>
+<li><a data-toc href="#u-namecolor">nameColor</a></li>
+<li><a data-toc href="#u-printgraph">printGraph</a></li>
+<li><a data-toc href="#u-findnode">findNode</a></li>
+<li><a data-toc href="#u-printpath">printPath</a></li>
+<li><a data-toc href="#u-dijkstra">dijkstra</a></li>
+<li><a data-toc href="#u-rebuild">rebuildPath</a></li>
+<li><a data-toc href="#u-bidir">bidirectionalDijkstra</a></li>
+<li><a data-toc href="#u-main">main</a></li>
+</ol>
+</li>
+<li><a data-toc href="#data">Data structures</a></li>
+<li><a data-toc href="#cost">Cost</a></li>
+</ol>
+  </nav>
+  <details class="toc toc-mobile">
+    <summary>On this page</summary>
+    <nav aria-label="On this page">
+<ol>
+<li><a data-toc href="#output">What it prints</a></li>
+<li><a data-toc href="#grid">The grid model</a></li>
+<li><a data-toc href="#walkthrough">Line by line</a>
+<ol>
+<li><a data-toc href="#u-setup">Includes, macros, globals</a></li>
+<li><a data-toc href="#u-buildnames">buildNames</a></li>
+<li><a data-toc href="#u-buildgraph">buildGraph</a></li>
+<li><a data-toc href="#u-console">setupConsole</a></li>
+<li><a data-toc href="#u-namecolor">nameColor</a></li>
+<li><a data-toc href="#u-printgraph">printGraph</a></li>
+<li><a data-toc href="#u-findnode">findNode</a></li>
+<li><a data-toc href="#u-printpath">printPath</a></li>
+<li><a data-toc href="#u-dijkstra">dijkstra</a></li>
+<li><a data-toc href="#u-rebuild">rebuildPath</a></li>
+<li><a data-toc href="#u-bidir">bidirectionalDijkstra</a></li>
+<li><a data-toc href="#u-main">main</a></li>
+</ol>
+</li>
+<li><a data-toc href="#data">Data structures</a></li>
+<li><a data-toc href="#cost">Cost</a></li>
+</ol>
+    </nav>
+  </details>
+  <main id="main" class="content">
+
+    <h2 id="output">What it prints</h2>
+    <div class="measure">
+      <p>The whole run below is the program’s real output, captured by building it and piping in <code>A1 M4</code> then <code>q</code>. ANSI colour escapes are stripped so the text is readable here; in a colour terminal the roads are cyan, the start yellow, the goal magenta and the route green.</p>
+    </div>
+    <pre class="term" aria-label="Program output for A1 to M4">Map: 13 rows x 4 columns = 52 locations
+The number on a road is its distance.
+
+┌───────┬───────┬───────┬───────┐
+│ A1  3 │ A2  6 │ A3  9 │ A4    │
+├───3───┼───8───┼───6───┼───4───┤
+│ B1  5 │ B2  8 │ B3  4 │ B4    │
+├───6───┼───4───┼───9───┼───7───┤
+│ C1  7 │ C2  3 │ C3  6 │ C4    │
+├───9───┼───7───┼───5───┼───3───┤
+│ D1  9 │ D2  5 │ D3  8 │ D4    │
+├───5───┼───3───┼───8───┼───6───┤
+│ E1  4 │ E2  7 │ E3  3 │ E4    │
+├───8───┼───6───┼───4───┼───9───┤
+│ F1  6 │ F2  9 │ F3  5 │ F4    │
+├───4───┼───9───┼───7───┼───5───┤
+│ G1  8 │ G2  4 │ G3  7 │ G4    │
+├───7───┼───5───┼───3───┼───8───┤
+│ H1  3 │ H2  6 │ H3  9 │ H4    │
+├───3───┼───8───┼───6───┼───4───┤
+│ I1  5 │ I2  8 │ I3  4 │ I4    │
+├───6───┼───4───┼───9───┼───7───┤
+│ J1  7 │ J2  3 │ J3  6 │ J4    │
+├───9───┼───7───┼───5───┼───3───┤
+│ K1  9 │ K2  5 │ K3  8 │ K4    │
+├───5───┼───3───┼───8───┼───6───┤
+│ L1  4 │ L2  7 │ L3  3 │ L4    │
+├───8───┼───6───┼───4───┼───9───┤
+│ M1  6 │ M2  9 │ M3  5 │ M4    │
+└───────┴───────┴───────┴───────┘
+
+Type two locations to connect, e.g.  A1 M4
+Press Enter on its own for the default A1 -&gt; M4, or type q to quit.
+
+&gt; 
+================ FINDING ROUTE A1 -&gt; M4 ================
+
+NORMAL DIJKSTRA
+  route : A1 -&gt; B1 -&gt; B2 -&gt; C2 -&gt; C3 -&gt; D3 -&gt; E3 -&gt; F3 -&gt; G3 -&gt; H3 -&gt; I3 -&gt; I4 -&gt; J4 -&gt; K4 -&gt; L4 -&gt; M4
+  cost  : 77
+  places settled: 52 (out of 52)
+
+BIDIRECTIONAL DIJKSTRA
+  route : A1 -&gt; B1 -&gt; B2 -&gt; C2 -&gt; C3 -&gt; D3 -&gt; E3 -&gt; F3 -&gt; G3 -&gt; H3 -&gt; I3 -&gt; I4 -&gt; J4 -&gt; K4 -&gt; L4 -&gt; M4
+  cost  : 77
+  places settled: 26 forward + 25 backward = 51 (out of 52)
+
+Both algorithms found the same route, as they should.
+
+Map: 13 rows x 4 columns = 52 locations
+start   goal   on the route
+The number on a road is its distance.
+
+┌───────┬───────┬───────┬───────┐
+│ A1  3 │ A2  6 │ A3  9 │ A4    │
+├───3───┼───8───┼───6───┼───4───┤
+│ B1  5 │ B2  8 │ B3  4 │ B4    │
+├───6───┼───4───┼───9───┼───7───┤
+│ C1  7 │ C2  3 │ C3  6 │ C4    │
+├───9───┼───7───┼───5───┼───3───┤
+│ D1  9 │ D2  5 │ D3  8 │ D4    │
+├───5───┼───3───┼───8───┼───6───┤
+│ E1  4 │ E2  7 │ E3  3 │ E4    │
+├───8───┼───6───┼───4───┼───9───┤
+│ F1  6 │ F2  9 │ F3  5 │ F4    │
+├───4───┼───9───┼───7───┼───5───┤
+│ G1  8 │ G2  4 │ G3  7 │ G4    │
+├───7───┼───5───┼───3───┼───8───┤
+│ H1  3 │ H2  6 │ H3  9 │ H4    │
+├───3───┼───8───┼───6───┼───4───┤
+│ I1  5 │ I2  8 │ I3  4 │ I4    │
+├───6───┼───4───┼───9───┼───7───┤
+│ J1  7 │ J2  3 │ J3  6 │ J4    │
+├───9───┼───7───┼───5───┼───3───┤
+│ K1  9 │ K2  5 │ K3  8 │ K4    │
+├───5───┼───3───┼───8───┼───6───┤
+│ L1  4 │ L2  7 │ L3  3 │ L4    │
+├───8───┼───6───┼───4───┼───9───┤
+│ M1  6 │ M2  9 │ M3  5 │ M4    │
+└───────┴───────┴───────┴───────┘
+
+&gt; 
+Goodbye.
+</pre>
+    <div class="measure">
+      <p>The first map appears before any search. The second is drawn after the route is found, with the legend and the route coloured. The numbers are identical in both — only the colours change.</p>
+    </div>
+
+    <h2 id="grid">The grid model</h2>
+    <div class="measure">
+      <p>Thirteen rows named <code>A</code> to <code>M</code>, four columns numbered <code>1</code> to <code>4</code>. Each location gets its number and its name from the same two loops, which is why the diagram below matches the printed map.</p>
+    </div>
+    <figure class="grid-fig">
+      <svg class="grid-svg" viewBox="0 0 470 740" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+<g class="edges">
+<line class="edge" data-row="0" x1="70" y1="46" x2="180" y2="46"/>
+<line class="edge" data-row="0" x1="180" y1="46" x2="290" y2="46"/>
+<line class="edge" data-row="0" x1="290" y1="46" x2="400" y2="46"/>
+<line class="edge" data-row="1" x1="70" y1="100" x2="180" y2="100"/>
+<line class="edge" data-row="1" x1="180" y1="100" x2="290" y2="100"/>
+<line class="edge" data-row="1" x1="290" y1="100" x2="400" y2="100"/>
+<line class="edge" data-row="2" x1="70" y1="154" x2="180" y2="154"/>
+<line class="edge" data-row="2" x1="180" y1="154" x2="290" y2="154"/>
+<line class="edge" data-row="2" x1="290" y1="154" x2="400" y2="154"/>
+<line class="edge" data-row="3" x1="70" y1="208" x2="180" y2="208"/>
+<line class="edge" data-row="3" x1="180" y1="208" x2="290" y2="208"/>
+<line class="edge" data-row="3" x1="290" y1="208" x2="400" y2="208"/>
+<line class="edge" data-row="4" x1="70" y1="262" x2="180" y2="262"/>
+<line class="edge" data-row="4" x1="180" y1="262" x2="290" y2="262"/>
+<line class="edge" data-row="4" x1="290" y1="262" x2="400" y2="262"/>
+<line class="edge" data-row="5" x1="70" y1="316" x2="180" y2="316"/>
+<line class="edge" data-row="5" x1="180" y1="316" x2="290" y2="316"/>
+<line class="edge" data-row="5" x1="290" y1="316" x2="400" y2="316"/>
+<line class="edge" data-row="6" x1="70" y1="370" x2="180" y2="370"/>
+<line class="edge" data-row="6" x1="180" y1="370" x2="290" y2="370"/>
+<line class="edge" data-row="6" x1="290" y1="370" x2="400" y2="370"/>
+<line class="edge" data-row="7" x1="70" y1="424" x2="180" y2="424"/>
+<line class="edge" data-row="7" x1="180" y1="424" x2="290" y2="424"/>
+<line class="edge" data-row="7" x1="290" y1="424" x2="400" y2="424"/>
+<line class="edge" data-row="8" x1="70" y1="478" x2="180" y2="478"/>
+<line class="edge" data-row="8" x1="180" y1="478" x2="290" y2="478"/>
+<line class="edge" data-row="8" x1="290" y1="478" x2="400" y2="478"/>
+<line class="edge" data-row="9" x1="70" y1="532" x2="180" y2="532"/>
+<line class="edge" data-row="9" x1="180" y1="532" x2="290" y2="532"/>
+<line class="edge" data-row="9" x1="290" y1="532" x2="400" y2="532"/>
+<line class="edge" data-row="10" x1="70" y1="586" x2="180" y2="586"/>
+<line class="edge" data-row="10" x1="180" y1="586" x2="290" y2="586"/>
+<line class="edge" data-row="10" x1="290" y1="586" x2="400" y2="586"/>
+<line class="edge" data-row="11" x1="70" y1="640" x2="180" y2="640"/>
+<line class="edge" data-row="11" x1="180" y1="640" x2="290" y2="640"/>
+<line class="edge" data-row="11" x1="290" y1="640" x2="400" y2="640"/>
+<line class="edge" data-row="12" x1="70" y1="694" x2="180" y2="694"/>
+<line class="edge" data-row="12" x1="180" y1="694" x2="290" y2="694"/>
+<line class="edge" data-row="12" x1="290" y1="694" x2="400" y2="694"/>
+<line class="edge" data-row="0" x1="70" y1="46" x2="70" y2="100"/>
+<line class="edge" data-row="0" x1="180" y1="46" x2="180" y2="100"/>
+<line class="edge" data-row="0" x1="290" y1="46" x2="290" y2="100"/>
+<line class="edge" data-row="0" x1="400" y1="46" x2="400" y2="100"/>
+<line class="edge" data-row="1" x1="70" y1="100" x2="70" y2="154"/>
+<line class="edge" data-row="1" x1="180" y1="100" x2="180" y2="154"/>
+<line class="edge" data-row="1" x1="290" y1="100" x2="290" y2="154"/>
+<line class="edge" data-row="1" x1="400" y1="100" x2="400" y2="154"/>
+<line class="edge" data-row="2" x1="70" y1="154" x2="70" y2="208"/>
+<line class="edge" data-row="2" x1="180" y1="154" x2="180" y2="208"/>
+<line class="edge" data-row="2" x1="290" y1="154" x2="290" y2="208"/>
+<line class="edge" data-row="2" x1="400" y1="154" x2="400" y2="208"/>
+<line class="edge" data-row="3" x1="70" y1="208" x2="70" y2="262"/>
+<line class="edge" data-row="3" x1="180" y1="208" x2="180" y2="262"/>
+<line class="edge" data-row="3" x1="290" y1="208" x2="290" y2="262"/>
+<line class="edge" data-row="3" x1="400" y1="208" x2="400" y2="262"/>
+<line class="edge" data-row="4" x1="70" y1="262" x2="70" y2="316"/>
+<line class="edge" data-row="4" x1="180" y1="262" x2="180" y2="316"/>
+<line class="edge" data-row="4" x1="290" y1="262" x2="290" y2="316"/>
+<line class="edge" data-row="4" x1="400" y1="262" x2="400" y2="316"/>
+<line class="edge" data-row="5" x1="70" y1="316" x2="70" y2="370"/>
+<line class="edge" data-row="5" x1="180" y1="316" x2="180" y2="370"/>
+<line class="edge" data-row="5" x1="290" y1="316" x2="290" y2="370"/>
+<line class="edge" data-row="5" x1="400" y1="316" x2="400" y2="370"/>
+<line class="edge" data-row="6" x1="70" y1="370" x2="70" y2="424"/>
+<line class="edge" data-row="6" x1="180" y1="370" x2="180" y2="424"/>
+<line class="edge" data-row="6" x1="290" y1="370" x2="290" y2="424"/>
+<line class="edge" data-row="6" x1="400" y1="370" x2="400" y2="424"/>
+<line class="edge" data-row="7" x1="70" y1="424" x2="70" y2="478"/>
+<line class="edge" data-row="7" x1="180" y1="424" x2="180" y2="478"/>
+<line class="edge" data-row="7" x1="290" y1="424" x2="290" y2="478"/>
+<line class="edge" data-row="7" x1="400" y1="424" x2="400" y2="478"/>
+<line class="edge" data-row="8" x1="70" y1="478" x2="70" y2="532"/>
+<line class="edge" data-row="8" x1="180" y1="478" x2="180" y2="532"/>
+<line class="edge" data-row="8" x1="290" y1="478" x2="290" y2="532"/>
+<line class="edge" data-row="8" x1="400" y1="478" x2="400" y2="532"/>
+<line class="edge" data-row="9" x1="70" y1="532" x2="70" y2="586"/>
+<line class="edge" data-row="9" x1="180" y1="532" x2="180" y2="586"/>
+<line class="edge" data-row="9" x1="290" y1="532" x2="290" y2="586"/>
+<line class="edge" data-row="9" x1="400" y1="532" x2="400" y2="586"/>
+<line class="edge" data-row="10" x1="70" y1="586" x2="70" y2="640"/>
+<line class="edge" data-row="10" x1="180" y1="586" x2="180" y2="640"/>
+<line class="edge" data-row="10" x1="290" y1="586" x2="290" y2="640"/>
+<line class="edge" data-row="10" x1="400" y1="586" x2="400" y2="640"/>
+<line class="edge" data-row="11" x1="70" y1="640" x2="70" y2="694"/>
+<line class="edge" data-row="11" x1="180" y1="640" x2="180" y2="694"/>
+<line class="edge" data-row="11" x1="290" y1="640" x2="290" y2="694"/>
+<line class="edge" data-row="11" x1="400" y1="640" x2="400" y2="694"/>
+</g>
+<g class="nodes">
+<circle class="node s" cx="70" cy="46" r="13"/>
+<text class="lbl s" x="70" y="46" text-anchor="middle" dominant-baseline="central">A1</text>
+<circle class="node" cx="180" cy="46" r="13"/>
+<text class="lbl" x="180" y="46" text-anchor="middle" dominant-baseline="central">A2</text>
+<circle class="node" cx="290" cy="46" r="13"/>
+<text class="lbl" x="290" y="46" text-anchor="middle" dominant-baseline="central">A3</text>
+<circle class="node" cx="400" cy="46" r="13"/>
+<text class="lbl" x="400" y="46" text-anchor="middle" dominant-baseline="central">A4</text>
+<circle class="node" cx="70" cy="100" r="13"/>
+<text class="lbl" x="70" y="100" text-anchor="middle" dominant-baseline="central">B1</text>
+<circle class="node" cx="180" cy="100" r="13"/>
+<text class="lbl" x="180" y="100" text-anchor="middle" dominant-baseline="central">B2</text>
+<circle class="node" cx="290" cy="100" r="13"/>
+<text class="lbl" x="290" y="100" text-anchor="middle" dominant-baseline="central">B3</text>
+<circle class="node" cx="400" cy="100" r="13"/>
+<text class="lbl" x="400" y="100" text-anchor="middle" dominant-baseline="central">B4</text>
+<circle class="node" cx="70" cy="154" r="13"/>
+<text class="lbl" x="70" y="154" text-anchor="middle" dominant-baseline="central">C1</text>
+<circle class="node" cx="180" cy="154" r="13"/>
+<text class="lbl" x="180" y="154" text-anchor="middle" dominant-baseline="central">C2</text>
+<circle class="node" cx="290" cy="154" r="13"/>
+<text class="lbl" x="290" y="154" text-anchor="middle" dominant-baseline="central">C3</text>
+<circle class="node" cx="400" cy="154" r="13"/>
+<text class="lbl" x="400" y="154" text-anchor="middle" dominant-baseline="central">C4</text>
+<circle class="node" cx="70" cy="208" r="13"/>
+<text class="lbl" x="70" y="208" text-anchor="middle" dominant-baseline="central">D1</text>
+<circle class="node" cx="180" cy="208" r="13"/>
+<text class="lbl" x="180" y="208" text-anchor="middle" dominant-baseline="central">D2</text>
+<circle class="node" cx="290" cy="208" r="13"/>
+<text class="lbl" x="290" y="208" text-anchor="middle" dominant-baseline="central">D3</text>
+<circle class="node" cx="400" cy="208" r="13"/>
+<text class="lbl" x="400" y="208" text-anchor="middle" dominant-baseline="central">D4</text>
+<circle class="node" cx="70" cy="262" r="13"/>
+<text class="lbl" x="70" y="262" text-anchor="middle" dominant-baseline="central">E1</text>
+<circle class="node" cx="180" cy="262" r="13"/>
+<text class="lbl" x="180" y="262" text-anchor="middle" dominant-baseline="central">E2</text>
+<circle class="node" cx="290" cy="262" r="13"/>
+<text class="lbl" x="290" y="262" text-anchor="middle" dominant-baseline="central">E3</text>
+<circle class="node" cx="400" cy="262" r="13"/>
+<text class="lbl" x="400" y="262" text-anchor="middle" dominant-baseline="central">E4</text>
+<circle class="node" cx="70" cy="316" r="13"/>
+<text class="lbl" x="70" y="316" text-anchor="middle" dominant-baseline="central">F1</text>
+<circle class="node" cx="180" cy="316" r="13"/>
+<text class="lbl" x="180" y="316" text-anchor="middle" dominant-baseline="central">F2</text>
+<circle class="node" cx="290" cy="316" r="13"/>
+<text class="lbl" x="290" y="316" text-anchor="middle" dominant-baseline="central">F3</text>
+<circle class="node" cx="400" cy="316" r="13"/>
+<text class="lbl" x="400" y="316" text-anchor="middle" dominant-baseline="central">F4</text>
+<circle class="node" cx="70" cy="370" r="13"/>
+<text class="lbl" x="70" y="370" text-anchor="middle" dominant-baseline="central">G1</text>
+<circle class="node" cx="180" cy="370" r="13"/>
+<text class="lbl" x="180" y="370" text-anchor="middle" dominant-baseline="central">G2</text>
+<circle class="node" cx="290" cy="370" r="13"/>
+<text class="lbl" x="290" y="370" text-anchor="middle" dominant-baseline="central">G3</text>
+<circle class="node" cx="400" cy="370" r="13"/>
+<text class="lbl" x="400" y="370" text-anchor="middle" dominant-baseline="central">G4</text>
+<circle class="node" cx="70" cy="424" r="13"/>
+<text class="lbl" x="70" y="424" text-anchor="middle" dominant-baseline="central">H1</text>
+<circle class="node" cx="180" cy="424" r="13"/>
+<text class="lbl" x="180" y="424" text-anchor="middle" dominant-baseline="central">H2</text>
+<circle class="node" cx="290" cy="424" r="13"/>
+<text class="lbl" x="290" y="424" text-anchor="middle" dominant-baseline="central">H3</text>
+<circle class="node" cx="400" cy="424" r="13"/>
+<text class="lbl" x="400" y="424" text-anchor="middle" dominant-baseline="central">H4</text>
+<circle class="node" cx="70" cy="478" r="13"/>
+<text class="lbl" x="70" y="478" text-anchor="middle" dominant-baseline="central">I1</text>
+<circle class="node" cx="180" cy="478" r="13"/>
+<text class="lbl" x="180" y="478" text-anchor="middle" dominant-baseline="central">I2</text>
+<circle class="node" cx="290" cy="478" r="13"/>
+<text class="lbl" x="290" y="478" text-anchor="middle" dominant-baseline="central">I3</text>
+<circle class="node" cx="400" cy="478" r="13"/>
+<text class="lbl" x="400" y="478" text-anchor="middle" dominant-baseline="central">I4</text>
+<circle class="node" cx="70" cy="532" r="13"/>
+<text class="lbl" x="70" y="532" text-anchor="middle" dominant-baseline="central">J1</text>
+<circle class="node" cx="180" cy="532" r="13"/>
+<text class="lbl" x="180" y="532" text-anchor="middle" dominant-baseline="central">J2</text>
+<circle class="node" cx="290" cy="532" r="13"/>
+<text class="lbl" x="290" y="532" text-anchor="middle" dominant-baseline="central">J3</text>
+<circle class="node" cx="400" cy="532" r="13"/>
+<text class="lbl" x="400" y="532" text-anchor="middle" dominant-baseline="central">J4</text>
+<circle class="node" cx="70" cy="586" r="13"/>
+<text class="lbl" x="70" y="586" text-anchor="middle" dominant-baseline="central">K1</text>
+<circle class="node" cx="180" cy="586" r="13"/>
+<text class="lbl" x="180" y="586" text-anchor="middle" dominant-baseline="central">K2</text>
+<circle class="node" cx="290" cy="586" r="13"/>
+<text class="lbl" x="290" y="586" text-anchor="middle" dominant-baseline="central">K3</text>
+<circle class="node" cx="400" cy="586" r="13"/>
+<text class="lbl" x="400" y="586" text-anchor="middle" dominant-baseline="central">K4</text>
+<circle class="node" cx="70" cy="640" r="13"/>
+<text class="lbl" x="70" y="640" text-anchor="middle" dominant-baseline="central">L1</text>
+<circle class="node" cx="180" cy="640" r="13"/>
+<text class="lbl" x="180" y="640" text-anchor="middle" dominant-baseline="central">L2</text>
+<circle class="node" cx="290" cy="640" r="13"/>
+<text class="lbl" x="290" y="640" text-anchor="middle" dominant-baseline="central">L3</text>
+<circle class="node" cx="400" cy="640" r="13"/>
+<text class="lbl" x="400" y="640" text-anchor="middle" dominant-baseline="central">L4</text>
+<circle class="node" cx="70" cy="694" r="13"/>
+<text class="lbl" x="70" y="694" text-anchor="middle" dominant-baseline="central">M1</text>
+<circle class="node" cx="180" cy="694" r="13"/>
+<text class="lbl" x="180" y="694" text-anchor="middle" dominant-baseline="central">M2</text>
+<circle class="node" cx="290" cy="694" r="13"/>
+<text class="lbl" x="290" y="694" text-anchor="middle" dominant-baseline="central">M3</text>
+<circle class="node g" cx="400" cy="694" r="13"/>
+<text class="lbl g" x="400" y="694" text-anchor="middle" dominant-baseline="central">M4</text>
+</g>
+</svg>
+      <figcaption>13 rows &times; 4 columns = 52 locations, joined as a grid. Right-road weight: <code>3 + ((r&times;2 + c&times;3) mod 7)</code>. Down-road weight: <code>3 + ((r&times;3 + c&times;5) mod 7)</code>. 87 roads in all: 39 across, 48 down. <code>A1</code> is the start (yellow) and <code>M4</code> the goal (magenta).</figcaption>
+    </figure>
+    <div class="measure">
+      <p class="grid-rule">number = row * 4 + column        (both counting from 0)
+name   = 'A' + row, then column + 1</p>
+      <p>So <code>A1</code> is 0, <code>A2</code> is 1, <code>A3</code> is 2, <code>A4</code> is 3, <code>B1</code> is 4, and so on to <code>M4</code> at 51. Every place is joined to the one on its right and the one below, and each road is written into the matrix both ways, so travel works in both directions.</p>
+      <p>The distances are not hand-written; each road’s weight comes from a formula, which keeps the map varied in four lines instead of a long list that is easy to mistype. The <code>% 7</code> is the remainder after dividing by seven, giving 0–6, and adding 3 lifts the result to 3–9:</p>
+      <p class="grid-rule">road to the right :  3 + ((row * 2 + column * 3) % 7)
+road downward     :  3 + ((row * 3 + column * 5) % 7)</p>
+      <p>Because the two formulas use different multipliers, horizontal and vertical roads differ, and the cheapest route tends to zig-zag instead of running straight. The diagram above draws every road with no weight labels — 87 of them across a small picture would be unreadable. The counts are 39 roads across (3 per row &times; 13 rows) and 48 down (12 per column &times; 4 columns), 87 in total.</p>
+    </div>
+
+    <h2 id="walkthrough">Line by line</h2>
+    <div class="measure">
+      <p>Every unit of the file, in the order it is written. Each code line carries its real line number as an anchor, so <a href="#L160">#L160</a> jumps to line 160. Hover or focus an explanation row to highlight its line, or follow the line number next to it.</p>
+    </div>
+<section id="u-setup" class="unit" aria-labelledby="u-setup-h">
+<h3 id="u-setup-h" class="prose">Includes, colour macros, and globals</h3>
+<p class="purpose">Pull in the two standard headers the program needs, define the map size and the values it uses everywhere, and declare the two arrays that hold the whole problem.</p>
+<div class="code" role="group" aria-label="File header, includes, colour macros, and globals source code">
+<span class="cl" id="L1"><span class="ln" aria-hidden="true">1</span><span class="ct">/*</span></span>
+<span class="cl" id="L2"><span class="ln" aria-hidden="true">2</span><span class="ct"> * DSAL Mini Project : Shortest Path using Dijkstra's Algorithm</span></span>
+<span class="cl" id="L3"><span class="ln" aria-hidden="true">3</span><span class="ct"> * 52 locations (13x4 map), normal and bidirectional Dijkstra.</span></span>
+<span class="cl" id="L4"><span class="ln" aria-hidden="true">4</span><span class="ct"> *</span></span>
+<span class="cl" id="L5"><span class="ln" aria-hidden="true">5</span><span class="ct"> * Compile : gcc main.c -o main</span></span>
+<span class="cl" id="L6"><span class="ln" aria-hidden="true">6</span><span class="ct"> */</span></span>
+<span class="cl" id="L7"><span class="ln" aria-hidden="true">7</span><span class="ct"></span></span>
+<span class="cl" id="L8"><span class="ln" aria-hidden="true">8</span><span class="ct">#include &lt;stdio.h&gt;</span></span>
+<span class="cl" id="L9"><span class="ln" aria-hidden="true">9</span><span class="ct">#include &lt;string.h&gt;</span></span>
+<span class="cl" id="L10"><span class="ln" aria-hidden="true">10</span><span class="ct"></span></span>
+<span class="cl" id="L11"><span class="ln" aria-hidden="true">11</span><span class="ct">#ifdef _WIN32</span></span>
+<span class="cl" id="L12"><span class="ln" aria-hidden="true">12</span><span class="ct">#include &lt;windows.h&gt;    /* only used to switch the console to UTF-8 + colours */</span></span>
+<span class="cl" id="L13"><span class="ln" aria-hidden="true">13</span><span class="ct">#endif</span></span>
+<span class="cl" id="L14"><span class="ln" aria-hidden="true">14</span><span class="ct"></span></span>
+<span class="cl" id="L15"><span class="ln" aria-hidden="true">15</span><span class="ct">#define ROWS 13</span></span>
+<span class="cl" id="L16"><span class="ln" aria-hidden="true">16</span><span class="ct">#define COLS 4</span></span>
+<span class="cl" id="L17"><span class="ln" aria-hidden="true">17</span><span class="ct">#define N    (ROWS * COLS)   /* 52 */</span></span>
+<span class="cl" id="L18"><span class="ln" aria-hidden="true">18</span><span class="ct">#define INF  1000000</span></span>
+<span class="cl" id="L19"><span class="ln" aria-hidden="true">19</span><span class="ct"></span></span>
+<span class="cl" id="L20"><span class="ln" aria-hidden="true">20</span><span class="ct">/* ANSI colour codes */</span></span>
+<span class="cl" id="L21"><span class="ln" aria-hidden="true">21</span><span class="ct">#define RESET   "\033[0m"</span></span>
+<span class="cl" id="L22"><span class="ln" aria-hidden="true">22</span><span class="ct">#define GREY    "\033[90m"</span></span>
+<span class="cl" id="L23"><span class="ln" aria-hidden="true">23</span><span class="ct">#define CYAN    "\033[36m"</span></span>
+<span class="cl" id="L24"><span class="ln" aria-hidden="true">24</span><span class="ct">#define GREEN   "\033[32m"</span></span>
+<span class="cl" id="L25"><span class="ln" aria-hidden="true">25</span><span class="ct">#define YELLOW  "\033[33m"</span></span>
+<span class="cl" id="L26"><span class="ln" aria-hidden="true">26</span><span class="ct">#define MAGENTA "\033[35m"</span></span>
+<span class="cl" id="L27"><span class="ln" aria-hidden="true">27</span><span class="ct">#define BOLD    "\033[1m"</span></span>
+<span class="cl" id="L28"><span class="ln" aria-hidden="true">28</span><span class="ct"></span></span>
+<span class="cl" id="L29"><span class="ln" aria-hidden="true">29</span><span class="ct">char NAME[N][4];      /* "A1" .. "M4" */</span></span>
+<span class="cl" id="L30"><span class="ln" aria-hidden="true">30</span><span class="ct">int  graph[N][N];     /* 0 = no road */</span></span>
+<span class="cl" id="L31"><span class="ln" aria-hidden="true">31</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="1 2 3 4 5 6"><span class="nl"><a href="#L1">1–6</a></span><span class="nt">The file opens with a header comment naming the project, the map it uses (13 × 4, plain and bidirectional Dijkstra) and the build command. The compiler ignores it entirely.</span></li>
+<li class="note" data-lines="8 9"><span class="nl"><a href="#L8">8–9</a></span><span class="nt">The only two standard headers the program uses. <code>stdio.h</code> supplies <code>printf</code>, <code>fgets</code>, <code>sscanf</code> and <code>stdin</code>; <code>string.h</code> supplies <code>strcmp</code> and <code>strcpy</code>. Nothing else is needed to build.</span></li>
+<li class="note" data-lines="11 12 13"><span class="nl"><a href="#L11">11–13</a></span><span class="nt">The <code>#ifdef _WIN32</code> guard means <code>windows.h</code> is compiled only on Windows, and only to switch the console to UTF-8 and enable colour escapes (see <code>setupConsole</code>). On Linux or macOS these lines vanish, so the same file still builds with plain <code>gcc</code>.</span></li>
+<li class="note" data-lines="15"><span class="nl"><a href="#L15">15</a></span><span class="nt"><code>ROWS 13</code> — the map has 13 rows, named <code>A</code> to <code>M</code>.</span></li>
+<li class="note" data-lines="16"><span class="nl"><a href="#L16">16</a></span><span class="nt"><code>COLS 4</code> — 4 columns, numbered <code>1</code> to <code>4</code>.</span></li>
+<li class="note" data-lines="17"><span class="nl"><a href="#L17">17</a></span><span class="nt"><code>N</code> is <code>ROWS * COLS</code> = 52. It is written as an expression (in parentheses) rather than the literal 52 so the size can never drift from the grid dimensions; every loop bound later uses <code>N</code>.</span></li>
+<li class="note" data-lines="18"><span class="nl"><a href="#L18">18</a></span><span class="nt"><code>INF</code> is the “unknown distance” sentinel. Unreached places start at one million so that any real distance (a single road is at most 9) is smaller. It only has to exceed the largest possible route total, and a million is far beyond the whole map added up.</span></li>
+<li class="note" data-lines="20"><span class="nl"><a href="#L20">20</a></span><span class="nt">A plain comment labelling the block of terminal escape codes below.</span></li>
+<li class="note" data-lines="21 22 23 24 25 26 27"><span class="nl"><a href="#L21">21–27</a></span><span class="nt">One macro per terminal colour. <code>"\033"</code> is the ESC character (octal 033); the rest tells the terminal what to do, for example <code>"\033[36m"</code> means “switch to cyan”. <code>RESET</code> (<code>"\033[0m"</code>) turns colour off again. These are ordinary strings, so printing them is just printing text — the terminal is what interprets them. <code>BOLD</code> is the only one that is not a colour. They are also why the page keeps the same colours as the program: cyan roads, yellow start, magenta goal, green route.</span></li>
+<li class="note" data-lines="29"><span class="nl"><a href="#L29">29</a></span><span class="nt">The name table: 52 slots of 4 bytes each, enough to hold up to three name characters plus the terminating <code>\0</code>. Filled in by <code>buildNames</code>.</span></li>
+<li class="note" data-lines="30"><span class="nl"><a href="#L30">30</a></span><span class="nt">The adjacency matrix, 52 by 52. The comment records the convention the entire program depends on: <code>0</code> means “no road”, and any other value is that road’s distance.</span></li>
+</ul>
+</section>
+
+<section id="u-buildnames" class="unit" aria-labelledby="u-buildnames-h">
+<h3 id="u-buildnames-h">buildNames</h3>
+<p class="purpose">Give every location its printed name, <code>A1</code> through <code>M4</code>, by walking the grid row by row.</p>
+<div class="code" role="group" aria-label="buildNames source code">
+<span class="cl" id="L32"><span class="ln" aria-hidden="true">32</span><span class="ct">/* name each location: row * 4 + column */</span></span>
+<span class="cl" id="L33"><span class="ln" aria-hidden="true">33</span><span class="ct">void buildNames(void) {</span></span>
+<span class="cl" id="L34"><span class="ln" aria-hidden="true">34</span><span class="ct">    int r, c, i = 0;</span></span>
+<span class="cl" id="L35"><span class="ln" aria-hidden="true">35</span><span class="ct">    for (r = 0; r &lt; ROWS; r++) {</span></span>
+<span class="cl" id="L36"><span class="ln" aria-hidden="true">36</span><span class="ct">        for (c = 0; c &lt; COLS; c++) {</span></span>
+<span class="cl" id="L37"><span class="ln" aria-hidden="true">37</span><span class="ct">            sprintf(NAME[i], "%c%d", 'A' + r, c + 1);</span></span>
+<span class="cl" id="L38"><span class="ln" aria-hidden="true">38</span><span class="ct">            i++;</span></span>
+<span class="cl" id="L39"><span class="ln" aria-hidden="true">39</span><span class="ct">        }</span></span>
+<span class="cl" id="L40"><span class="ln" aria-hidden="true">40</span><span class="ct">    }</span></span>
+<span class="cl" id="L41"><span class="ln" aria-hidden="true">41</span><span class="ct">}</span></span>
+<span class="cl" id="L42"><span class="ln" aria-hidden="true">42</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="32"><span class="nl"><a href="#L32">32</a></span><span class="nt">The comment states the naming rule: a place’s name is decided by <code>row * 4 + column</code>.</span></li>
+<li class="note" data-lines="33"><span class="nl"><a href="#L33">33</a></span><span class="nt">The function takes nothing and returns nothing; it writes into the global <code>NAME</code> array.</span></li>
+<li class="note" data-lines="34"><span class="nl"><a href="#L34">34</a></span><span class="nt"><code>r</code> is the current row, <code>c</code> the current column, and <code>i</code> is the running index 0 to 51. <code>i</code> starts at 0 and only ever grows.</span></li>
+<li class="note" data-lines="35"><span class="nl"><a href="#L35">35</a></span><span class="nt">Outer loop: visit rows 0 to 12.</span></li>
+<li class="note" data-lines="36"><span class="nl"><a href="#L36">36</a></span><span class="nt">Inner loop: visit columns 0 to 3 inside each row.</span></li>
+<li class="note" data-lines="37"><span class="nl"><a href="#L37">37</a></span><span class="nt">Format the name straight into the table. <code>'A' + r</code> relies on letters being consecutive in ASCII: <code>'A'+0</code> is <code>A</code>, <code>'A'+12</code> is <code>M</code>. <code>%c</code> prints that letter and <code>%d</code> prints <code>c + 1</code>, so the first column becomes <code>1</code>. Row 0, column 0 gives <code>"A1"</code>; row 12, column 3 gives <code>"M4"</code>.</span></li>
+<li class="note" data-lines="38"><span class="nl"><a href="#L38">38</a></span><span class="nt">Advance <code>i</code> to the next slot. Because the loops run row-major, the slot order is exactly <code>i = r * 4 + c</code> — the same rule the graph uses.</span></li>
+<li class="note" data-lines="39 40"><span class="nl"><a href="#L39">39–40</a></span><span class="nt">Close the inner and outer loops.</span></li>
+<li class="note" data-lines="41"><span class="nl"><a href="#L41">41</a></span><span class="nt">End of <code>buildNames</code>. After this call, <code>NAME[0]</code> is <code>"A1"</code> and <code>NAME[51]</code> is <code>"M4"</code>.</span></li>
+</ul>
+</section>
+
+<section id="u-buildgraph" class="unit" aria-labelledby="u-buildgraph-h">
+<h3 id="u-buildgraph-h">buildGraph</h3>
+<p class="purpose">Join every location to its right and below neighbour, storing a formula-generated distance on both ends of each road.</p>
+<div class="code" role="group" aria-label="buildGraph source code">
+<span class="cl" id="L43"><span class="ln" aria-hidden="true">43</span><span class="ct">/* join each location to its right and below neighbour */</span></span>
+<span class="cl" id="L44"><span class="ln" aria-hidden="true">44</span><span class="ct">void buildGraph(void) {</span></span>
+<span class="cl" id="L45"><span class="ln" aria-hidden="true">45</span><span class="ct">    int r, c, u, v;</span></span>
+<span class="cl" id="L46"><span class="ln" aria-hidden="true">46</span><span class="ct"></span></span>
+<span class="cl" id="L47"><span class="ln" aria-hidden="true">47</span><span class="ct">    for (r = 0; r &lt; ROWS; r++) {</span></span>
+<span class="cl" id="L48"><span class="ln" aria-hidden="true">48</span><span class="ct">        for (c = 0; c &lt; COLS; c++) {</span></span>
+<span class="cl" id="L49"><span class="ln" aria-hidden="true">49</span><span class="ct">            u = r * COLS + c;</span></span>
+<span class="cl" id="L50"><span class="ln" aria-hidden="true">50</span><span class="ct">            if (c + 1 &lt; COLS) {</span></span>
+<span class="cl" id="L51"><span class="ln" aria-hidden="true">51</span><span class="ct">                v = r * COLS + (c + 1);</span></span>
+<span class="cl" id="L52"><span class="ln" aria-hidden="true">52</span><span class="ct">                graph[u][v] = graph[v][u] = 3 + ((r * 2 + c * 3) % 7);</span></span>
+<span class="cl" id="L53"><span class="ln" aria-hidden="true">53</span><span class="ct">            }</span></span>
+<span class="cl" id="L54"><span class="ln" aria-hidden="true">54</span><span class="ct">            if (r + 1 &lt; ROWS) {</span></span>
+<span class="cl" id="L55"><span class="ln" aria-hidden="true">55</span><span class="ct">                v = (r + 1) * COLS + c;</span></span>
+<span class="cl" id="L56"><span class="ln" aria-hidden="true">56</span><span class="ct">                graph[u][v] = graph[v][u] = 3 + ((r * 3 + c * 5) % 7);</span></span>
+<span class="cl" id="L57"><span class="ln" aria-hidden="true">57</span><span class="ct">            }</span></span>
+<span class="cl" id="L58"><span class="ln" aria-hidden="true">58</span><span class="ct">        }</span></span>
+<span class="cl" id="L59"><span class="ln" aria-hidden="true">59</span><span class="ct">    }</span></span>
+<span class="cl" id="L60"><span class="ln" aria-hidden="true">60</span><span class="ct">}</span></span>
+<span class="cl" id="L61"><span class="ln" aria-hidden="true">61</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="43"><span class="nl"><a href="#L43">43</a></span><span class="nt">Comment: each place is joined only to the neighbour on its right and the one below it.</span></li>
+<li class="note" data-lines="44"><span class="nl"><a href="#L44">44</a></span><span class="nt">Function signature; it fills the global <code>graph</code>.</span></li>
+<li class="note" data-lines="45"><span class="nl"><a href="#L45">45</a></span><span class="nt"><code>u</code> is the current location, <code>v</code> its neighbour.</span></li>
+<li class="note" data-lines="47"><span class="nl"><a href="#L47">47</a></span><span class="nt">Outer loop over rows.</span></li>
+<li class="note" data-lines="48"><span class="nl"><a href="#L48">48</a></span><span class="nt">Inner loop over columns.</span></li>
+<li class="note" data-lines="49"><span class="nl"><a href="#L49">49</a></span><span class="nt">Convert <code>(row, column)</code> to the single location number 0 to 51, the same rule used for names.</span></li>
+<li class="note" data-lines="50"><span class="nl"><a href="#L50">50</a></span><span class="nt">Is there a column to the right? Column 3 has none, so the right road is skipped on the last column.</span></li>
+<li class="note" data-lines="51"><span class="nl"><a href="#L51">51</a></span><span class="nt">The index of the right neighbour: same row, next column.</span></li>
+<li class="note" data-lines="52"><span class="nl"><a href="#L52">52</a></span><span class="nt">Set the road in both directions at once (<code>graph[u][v] = graph[v][u] = …</code>), which is what makes the graph undirected. The distance comes from the “right road” formula: <code>(r*2 + c*3) % 7</code> gives 0 to 6, and adding 3 gives 3 to 9. Both row and column feed the formula, so different places get different weights — this is why the map is not uniformly weighted, and why a straight line is often not the cheapest route.</span></li>
+<li class="note" data-lines="53"><span class="nl"><a href="#L53">53</a></span><span class="nt">Close the right-neighbour check.</span></li>
+<li class="note" data-lines="54"><span class="nl"><a href="#L54">54</a></span><span class="nt">Is there a row below? The last row has none, so the down road is skipped there.</span></li>
+<li class="note" data-lines="55"><span class="nl"><a href="#L55">55</a></span><span class="nt">The index of the neighbour below: next row, same column.</span></li>
+<li class="note" data-lines="56"><span class="nl"><a href="#L56">56</a></span><span class="nt">The same two-way assignment, using the “down road” formula <code>(r*3 + c*5) % 7</code>, again scaled to 3 to 9. It uses different multipliers (3 and 5 instead of 2 and 3) so horizontal and vertical roads follow different patterns.</span></li>
+<li class="note" data-lines="57"><span class="nl"><a href="#L57">57</a></span><span class="nt">Close the down-neighbour check.</span></li>
+<li class="note" data-lines="58 59"><span class="nl"><a href="#L58">58–59</a></span><span class="nt">Close the inner and outer loops.</span></li>
+<li class="note" data-lines="60"><span class="nl"><a href="#L60">60</a></span><span class="nt">End of <code>buildGraph</code>. Every road is written twice, so the matrix is symmetric and the graph is undirected.</span></li>
+</ul>
+</section>
+
+<section id="u-console" class="unit" aria-labelledby="u-console-h">
+<h3 id="u-console-h">setupConsole</h3>
+<p class="purpose">On Windows only, switch the console to UTF-8 and turn on virtual-terminal processing so the box characters and colour escapes display correctly.</p>
+<div class="code" role="group" aria-label="setupConsole source code">
+<span class="cl" id="L62"><span class="ln" aria-hidden="true">62</span><span class="ct">/* let the console print UTF-8 and colours; does nothing on other systems */</span></span>
+<span class="cl" id="L63"><span class="ln" aria-hidden="true">63</span><span class="ct">void setupConsole(void) {</span></span>
+<span class="cl" id="L64"><span class="ln" aria-hidden="true">64</span><span class="ct">#ifdef _WIN32</span></span>
+<span class="cl" id="L65"><span class="ln" aria-hidden="true">65</span><span class="ct">    HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);</span></span>
+<span class="cl" id="L66"><span class="ln" aria-hidden="true">66</span><span class="ct">    DWORD mode;</span></span>
+<span class="cl" id="L67"><span class="ln" aria-hidden="true">67</span><span class="ct"></span></span>
+<span class="cl" id="L68"><span class="ln" aria-hidden="true">68</span><span class="ct">    SetConsoleOutputCP(65001);</span></span>
+<span class="cl" id="L69"><span class="ln" aria-hidden="true">69</span><span class="ct">    if (GetConsoleMode(out, &amp;mode))</span></span>
+<span class="cl" id="L70"><span class="ln" aria-hidden="true">70</span><span class="ct">        SetConsoleMode(out, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);</span></span>
+<span class="cl" id="L71"><span class="ln" aria-hidden="true">71</span><span class="ct">#endif</span></span>
+<span class="cl" id="L72"><span class="ln" aria-hidden="true">72</span><span class="ct">}</span></span>
+<span class="cl" id="L73"><span class="ln" aria-hidden="true">73</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="62"><span class="nl"><a href="#L62">62</a></span><span class="nt">Comment: this makes the console able to print UTF-8 and colours, and does nothing elsewhere.</span></li>
+<li class="note" data-lines="63"><span class="nl"><a href="#L63">63</a></span><span class="nt">Function signature, no arguments, no return value.</span></li>
+<li class="note" data-lines="64"><span class="nl"><a href="#L64">64</a></span><span class="nt"><code>#ifdef _WIN32</code> — everything below is compiled only on Windows.</span></li>
+<li class="note" data-lines="65"><span class="nl"><a href="#L65">65</a></span><span class="nt">Ask Windows for a handle to standard output, the stream the map is printed on.</span></li>
+<li class="note" data-lines="66"><span class="nl"><a href="#L66">66</a></span><span class="nt">A place to hold the console’s current mode flags.</span></li>
+<li class="note" data-lines="68"><span class="nl"><a href="#L68">68</a></span><span class="nt">Set the output code page to 65001, which is UTF-8. Without this the box-drawing characters would come out as garbage on some Windows terminals.</span></li>
+<li class="note" data-lines="69"><span class="nl"><a href="#L69">69</a></span><span class="nt">Read the current output mode; if that succeeds, the next line can adjust it.</span></li>
+<li class="note" data-lines="70"><span class="nl"><a href="#L70">70</a></span><span class="nt">Write the mode back with the virtual-terminal flag added. The <code>|</code> is a bitwise OR, so it adds the flag without clearing the existing ones. That flag is what makes the console obey the ANSI colour escapes defined earlier.</span></li>
+<li class="note" data-lines="71"><span class="nl"><a href="#L71">71</a></span><span class="nt"><code>#endif</code> — end of the Windows-only block.</span></li>
+<li class="note" data-lines="72"><span class="nl"><a href="#L72">72</a></span><span class="nt">End of <code>setupConsole</code>. On any non-Windows system the body is empty and the function does nothing.</span></li>
+</ul>
+</section>
+
+<section id="u-namecolor" class="unit" aria-labelledby="u-namecolor-h">
+<h3 id="u-namecolor-h">nameColor</h3>
+<p class="purpose">Return the escape string for a place’s role, so <code>printGraph</code> can colour the label.</p>
+<div class="code" role="group" aria-label="nameColor source code">
+<span class="cl" id="L74"><span class="ln" aria-hidden="true">74</span><span class="ct">/* colour for one place: 2 = start, 3 = goal, 1 = on the route, 0 = ordinary */</span></span>
+<span class="cl" id="L75"><span class="ln" aria-hidden="true">75</span><span class="ct">const char *nameColor(int m) {</span></span>
+<span class="cl" id="L76"><span class="ln" aria-hidden="true">76</span><span class="ct">    if (m == 2) return BOLD YELLOW;</span></span>
+<span class="cl" id="L77"><span class="ln" aria-hidden="true">77</span><span class="ct">    if (m == 3) return BOLD MAGENTA;</span></span>
+<span class="cl" id="L78"><span class="ln" aria-hidden="true">78</span><span class="ct">    if (m == 1) return BOLD GREEN;</span></span>
+<span class="cl" id="L79"><span class="ln" aria-hidden="true">79</span><span class="ct">    return "";</span></span>
+<span class="cl" id="L80"><span class="ln" aria-hidden="true">80</span><span class="ct">}</span></span>
+<span class="cl" id="L81"><span class="ln" aria-hidden="true">81</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="74"><span class="nl"><a href="#L74">74</a></span><span class="nt">Comment recording the <code>mark[]</code> convention used everywhere: <code>2</code> start, <code>3</code> goal, <code>1</code> on the route, <code>0</code> ordinary.</span></li>
+<li class="note" data-lines="75"><span class="nl"><a href="#L75">75</a></span><span class="nt">The function returns a <code>const char *</code> — a read-only string of escape codes.</span></li>
+<li class="note" data-lines="76"><span class="nl"><a href="#L76">76</a></span><span class="nt">A mark of 2 means the start, so return bold yellow — the same colour the legend uses.</span></li>
+<li class="note" data-lines="77"><span class="nl"><a href="#L77">77</a></span><span class="nt">A mark of 3 means the goal: bold magenta, matching the legend.</span></li>
+<li class="note" data-lines="78"><span class="nl"><a href="#L78">78</a></span><span class="nt">A mark of 1 means the place lies on the route: bold green.</span></li>
+<li class="note" data-lines="79"><span class="nl"><a href="#L79">79</a></span><span class="nt">Anything else (mark 0) is an ordinary place, so return an empty string and the terminal keeps its normal colour.</span></li>
+<li class="note" data-lines="80"><span class="nl"><a href="#L80">80</a></span><span class="nt">End of <code>nameColor</code>. This small mapping is the bridge between the numeric <code>mark[]</code> array and the colours on screen.</span></li>
+</ul>
+</section>
+
+<section id="u-printgraph" class="unit" aria-labelledby="u-printgraph-h">
+<h3 id="u-printgraph-h">printGraph</h3>
+<p class="purpose">Draw the whole map with box-drawing characters and each road’s weight, optionally colouring the start, the goal and the route.</p>
+<div class="code" role="group" aria-label="printGraph source code">
+<span class="cl" id="L82"><span class="ln" aria-hidden="true">82</span><span class="ct">/* draw the map; mark[] says which place is the start, the goal or on the route */</span></span>
+<span class="cl" id="L83"><span class="ln" aria-hidden="true">83</span><span class="ct">void printGraph(int mark[]) {</span></span>
+<span class="cl" id="L84"><span class="ln" aria-hidden="true">84</span><span class="ct">    int r, c, u, v, m;</span></span>
+<span class="cl" id="L85"><span class="ln" aria-hidden="true">85</span><span class="ct"></span></span>
+<span class="cl" id="L86"><span class="ln" aria-hidden="true">86</span><span class="ct">    printf("Map: %d rows x %d columns = %d locations\n", ROWS, COLS, N);</span></span>
+<span class="cl" id="L87"><span class="ln" aria-hidden="true">87</span><span class="ct">    if (mark != NULL)</span></span>
+<span class="cl" id="L88"><span class="ln" aria-hidden="true">88</span><span class="ct">        printf(BOLD YELLOW "start" RESET "   " BOLD MAGENTA "goal" RESET "   "</span></span>
+<span class="cl" id="L89"><span class="ln" aria-hidden="true">89</span><span class="ct">               BOLD GREEN "on the route" RESET "\n");</span></span>
+<span class="cl" id="L90"><span class="ln" aria-hidden="true">90</span><span class="ct">    printf("The number on a road is its distance.\n\n");</span></span>
+<span class="cl" id="L91"><span class="ln" aria-hidden="true">91</span><span class="ct"></span></span>
+<span class="cl" id="L92"><span class="ln" aria-hidden="true">92</span><span class="ct">    for (r = 0; r &lt; ROWS; r++) {</span></span>
+<span class="cl" id="L93"><span class="ln" aria-hidden="true">93</span><span class="ct">        /* edge above this row: the roads coming down from the row before */</span></span>
+<span class="cl" id="L94"><span class="ln" aria-hidden="true">94</span><span class="ct">        printf(GREY "%s" RESET, r == 0 ? "┌" : "├");</span></span>
+<span class="cl" id="L95"><span class="ln" aria-hidden="true">95</span><span class="ct">        for (c = 0; c &lt; COLS; c++) {</span></span>
+<span class="cl" id="L96"><span class="ln" aria-hidden="true">96</span><span class="ct">            if (r == 0) {</span></span>
+<span class="cl" id="L97"><span class="ln" aria-hidden="true">97</span><span class="ct">                printf(GREY "───────" RESET);</span></span>
+<span class="cl" id="L98"><span class="ln" aria-hidden="true">98</span><span class="ct">            } else {</span></span>
+<span class="cl" id="L99"><span class="ln" aria-hidden="true">99</span><span class="ct">                u = (r - 1) * COLS + c;</span></span>
+<span class="cl" id="L100"><span class="ln" aria-hidden="true">100</span><span class="ct">                v = r * COLS + c;</span></span>
+<span class="cl" id="L101"><span class="ln" aria-hidden="true">101</span><span class="ct">                printf(GREY "───" RESET CYAN "%d" RESET GREY "───" RESET, graph[u][v]);</span></span>
+<span class="cl" id="L102"><span class="ln" aria-hidden="true">102</span><span class="ct">            }</span></span>
+<span class="cl" id="L103"><span class="ln" aria-hidden="true">103</span><span class="ct">            if (c + 1 &lt; COLS) printf(GREY "%s" RESET, r == 0 ? "┬" : "┼");</span></span>
+<span class="cl" id="L104"><span class="ln" aria-hidden="true">104</span><span class="ct">            else              printf(GREY "%s" RESET, r == 0 ? "┐" : "┤");</span></span>
+<span class="cl" id="L105"><span class="ln" aria-hidden="true">105</span><span class="ct">        }</span></span>
+<span class="cl" id="L106"><span class="ln" aria-hidden="true">106</span><span class="ct">        printf("\n");</span></span>
+<span class="cl" id="L107"><span class="ln" aria-hidden="true">107</span><span class="ct"></span></span>
+<span class="cl" id="L108"><span class="ln" aria-hidden="true">108</span><span class="ct">        /* the locations, each with the road to its right */</span></span>
+<span class="cl" id="L109"><span class="ln" aria-hidden="true">109</span><span class="ct">        printf(GREY "│" RESET);</span></span>
+<span class="cl" id="L110"><span class="ln" aria-hidden="true">110</span><span class="ct">        for (c = 0; c &lt; COLS; c++) {</span></span>
+<span class="cl" id="L111"><span class="ln" aria-hidden="true">111</span><span class="ct">            u = r * COLS + c;</span></span>
+<span class="cl" id="L112"><span class="ln" aria-hidden="true">112</span><span class="ct">            m = (mark == NULL) ? 0 : mark[u];</span></span>
+<span class="cl" id="L113"><span class="ln" aria-hidden="true">113</span><span class="ct">            printf(" %s%s " RESET, nameColor(m), NAME[u]);</span></span>
+<span class="cl" id="L114"><span class="ln" aria-hidden="true">114</span><span class="ct">            if (c + 1 &lt; COLS) {</span></span>
+<span class="cl" id="L115"><span class="ln" aria-hidden="true">115</span><span class="ct">                printf(CYAN " %d " RESET, graph[u][u + 1]);</span></span>
+<span class="cl" id="L116"><span class="ln" aria-hidden="true">116</span><span class="ct">            } else {</span></span>
+<span class="cl" id="L117"><span class="ln" aria-hidden="true">117</span><span class="ct">                printf("   ");</span></span>
+<span class="cl" id="L118"><span class="ln" aria-hidden="true">118</span><span class="ct">            }</span></span>
+<span class="cl" id="L119"><span class="ln" aria-hidden="true">119</span><span class="ct">            printf(GREY "│" RESET);</span></span>
+<span class="cl" id="L120"><span class="ln" aria-hidden="true">120</span><span class="ct">        }</span></span>
+<span class="cl" id="L121"><span class="ln" aria-hidden="true">121</span><span class="ct">        printf("\n");</span></span>
+<span class="cl" id="L122"><span class="ln" aria-hidden="true">122</span><span class="ct">    }</span></span>
+<span class="cl" id="L123"><span class="ln" aria-hidden="true">123</span><span class="ct"></span></span>
+<span class="cl" id="L124"><span class="ln" aria-hidden="true">124</span><span class="ct">    printf(GREY "└" RESET);</span></span>
+<span class="cl" id="L125"><span class="ln" aria-hidden="true">125</span><span class="ct">    for (c = 0; c &lt; COLS; c++) {</span></span>
+<span class="cl" id="L126"><span class="ln" aria-hidden="true">126</span><span class="ct">        printf(GREY "───────" RESET);</span></span>
+<span class="cl" id="L127"><span class="ln" aria-hidden="true">127</span><span class="ct">        printf(GREY "%s" RESET, (c + 1 &lt; COLS) ? "┴" : "┘");</span></span>
+<span class="cl" id="L128"><span class="ln" aria-hidden="true">128</span><span class="ct">    }</span></span>
+<span class="cl" id="L129"><span class="ln" aria-hidden="true">129</span><span class="ct">    printf("\n");</span></span>
+<span class="cl" id="L130"><span class="ln" aria-hidden="true">130</span><span class="ct">}</span></span>
+<span class="cl" id="L131"><span class="ln" aria-hidden="true">131</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="82"><span class="nl"><a href="#L82">82</a></span><span class="nt">Comment: <code>mark[]</code> says which place is the start, the goal or on the route.</span></li>
+<li class="note" data-lines="83"><span class="nl"><a href="#L83">83</a></span><span class="nt">Signature. The array <code>mark</code> is passed in; <code>NULL</code> means “draw a plain map with no marks”.</span></li>
+<li class="note" data-lines="84"><span class="nl"><a href="#L84">84</a></span><span class="nt">Local variables: loop counters <code>r</code>, <code>c</code>, the two location numbers <code>u</code>, <code>v</code>, and the current mark <code>m</code>.</span></li>
+<li class="note" data-lines="86"><span class="nl"><a href="#L86">86</a></span><span class="nt">The title line, using <code>%d</code> for the three sizes so the text always matches the real dimensions.</span></li>
+<li class="note" data-lines="87 88 89"><span class="nl"><a href="#L87">87–89</a></span><span class="nt">When a <code>mark[]</code> was given, print the legend. Each word is wrapped in its colour and then <code>RESET</code> so only the word is coloured. Yellow <em>start</em>, magenta <em>goal</em>, green <em>on the route</em> — exactly the colours <code>nameColor</code> returns.</span></li>
+<li class="note" data-lines="90"><span class="nl"><a href="#L90">90</a></span><span class="nt">The caption explaining that a number on a road is its distance. The two <code>\n</code>s leave a blank line under it.</span></li>
+<li class="note" data-lines="92"><span class="nl"><a href="#L92">92</a></span><span class="nt">Main loop over the 13 rows. Each pass prints two lines of text: the row of roads coming down from above, then the row of locations themselves.</span></li>
+<li class="note" data-lines="93"><span class="nl"><a href="#L93">93</a></span><span class="nt">Comment: this first line is the roads coming down from the previous row.</span></li>
+<li class="note" data-lines="94"><span class="nl"><a href="#L94">94</a></span><span class="nt">The left edge of the road row. The top row starts with a corner <code>┌</code>; every other row starts with a T-junction <code>├</code>. The <code>?:</code> is a compact if/else.</span></li>
+<li class="note" data-lines="95"><span class="nl"><a href="#L95">95</a></span><span class="nt">Loop over the four columns.</span></li>
+<li class="note" data-lines="96"><span class="nl"><a href="#L96">96</a></span><span class="nt">If this is the top row, there are no roads above it, so…</span></li>
+<li class="note" data-lines="97"><span class="nl"><a href="#L97">97</a></span><span class="nt">…print a plain seven-character grid segment instead of a weighted road.</span></li>
+<li class="note" data-lines="98"><span class="nl"><a href="#L98">98</a></span><span class="nt">Otherwise, for rows 1 to 12, a real road comes down from the row above…</span></li>
+<li class="note" data-lines="99"><span class="nl"><a href="#L99">99</a></span><span class="nt">…<code>u</code> is the location in the row above…</span></li>
+<li class="note" data-lines="100"><span class="nl"><a href="#L100">100</a></span><span class="nt">…and <code>v</code> is the location in this row.</span></li>
+<li class="note" data-lines="101"><span class="nl"><a href="#L101">101</a></span><span class="nt">Print the vertical road as <code>───weight───</code>. The weight is <code>graph[u][v]</code>, printed in cyan, with grey dashes on either side.</span></li>
+<li class="note" data-lines="102"><span class="nl"><a href="#L102">102</a></span><span class="nt">Close the else branch.</span></li>
+<li class="note" data-lines="103"><span class="nl"><a href="#L103">103</a></span><span class="nt">Between columns print a junction: <code>┬</code> on the top row, <code>┼</code> otherwise.</span></li>
+<li class="note" data-lines="104"><span class="nl"><a href="#L104">104</a></span><span class="nt">After the last column print the right-hand edge: <code>┐</code> on the top row, <code>┤</code> otherwise.</span></li>
+<li class="note" data-lines="105"><span class="nl"><a href="#L105">105</a></span><span class="nt">Close the column loop.</span></li>
+<li class="note" data-lines="106"><span class="nl"><a href="#L106">106</a></span><span class="nt">End the road row with a newline.</span></li>
+<li class="note" data-lines="108"><span class="nl"><a href="#L108">108</a></span><span class="nt">Comment: the next line prints the locations, each with the road to its right.</span></li>
+<li class="note" data-lines="109"><span class="nl"><a href="#L109">109</a></span><span class="nt">The left wall of the location row, a grey <code>│</code>.</span></li>
+<li class="note" data-lines="110"><span class="nl"><a href="#L110">110</a></span><span class="nt">Loop over the four columns.</span></li>
+<li class="note" data-lines="111"><span class="nl"><a href="#L111">111</a></span><span class="nt">The location number for this cell.</span></li>
+<li class="note" data-lines="112"><span class="nl"><a href="#L112">112</a></span><span class="nt">Its mark, or 0 when <code>mark</code> is <code>NULL</code>. Checking for <code>NULL</code> here is what lets the same function draw both the plain and the marked map safely.</span></li>
+<li class="note" data-lines="113"><span class="nl"><a href="#L113">113</a></span><span class="nt">Print the label padded with a space on each side, coloured by its role. The first <code>%s</code> is the escape string from <code>nameColor</code>, the second is the name itself; <code>RESET</code> then returns to normal. The spaces keep every column aligned.</span></li>
+<li class="note" data-lines="114"><span class="nl"><a href="#L114">114</a></span><span class="nt">Is there a road to the right? The last column has none.</span></li>
+<li class="note" data-lines="115"><span class="nl"><a href="#L115">115</a></span><span class="nt">Print the right-hand road as <code> weight </code> in cyan. The neighbour is <code>u + 1</code> because columns are numbered consecutively.</span></li>
+<li class="note" data-lines="116"><span class="nl"><a href="#L116">116</a></span><span class="nt">Otherwise…</span></li>
+<li class="note" data-lines="117"><span class="nl"><a href="#L117">117</a></span><span class="nt">…print three spaces, so the row still lines up even with no right road.</span></li>
+<li class="note" data-lines="118"><span class="nl"><a href="#L118">118</a></span><span class="nt">Close the else branch.</span></li>
+<li class="note" data-lines="119"><span class="nl"><a href="#L119">119</a></span><span class="nt">The right wall <code>│</code> of this cell.</span></li>
+<li class="note" data-lines="120"><span class="nl"><a href="#L120">120</a></span><span class="nt">Close the column loop.</span></li>
+<li class="note" data-lines="121"><span class="nl"><a href="#L121">121</a></span><span class="nt">End the location row.</span></li>
+<li class="note" data-lines="122"><span class="nl"><a href="#L122">122</a></span><span class="nt">Close the row loop.</span></li>
+<li class="note" data-lines="124"><span class="nl"><a href="#L124">124</a></span><span class="nt">Start the bottom border with the corner <code>└</code>.</span></li>
+<li class="note" data-lines="125"><span class="nl"><a href="#L125">125</a></span><span class="nt">Loop over the columns again.</span></li>
+<li class="note" data-lines="126"><span class="nl"><a href="#L126">126</a></span><span class="nt">A plain segment under each column.</span></li>
+<li class="note" data-lines="127"><span class="nl"><a href="#L127">127</a></span><span class="nt">A junction <code>┴</code> between columns and the closing corner <code>┘</code> at the end.</span></li>
+<li class="note" data-lines="128"><span class="nl"><a href="#L128">128</a></span><span class="nt">Close the column loop.</span></li>
+<li class="note" data-lines="129"><span class="nl"><a href="#L129">129</a></span><span class="nt">End the border row.</span></li>
+<li class="note" data-lines="130"><span class="nl"><a href="#L130">130</a></span><span class="nt">End of <code>printGraph</code>. Everything it prints is assembled from fixed-width pieces, which is what keeps the 4 columns lined up.</span></li>
+</ul>
+</section>
+
+<section id="u-findnode" class="unit" aria-labelledby="u-findnode-h">
+<h3 id="u-findnode-h">findNode</h3>
+<p class="purpose">Turn a typed name such as <code>b2</code> or <code>B2</code> into a location number 0 to 51, or <code>-1</code> when the name is not a real location.</p>
+<div class="code" role="group" aria-label="findNode source code">
+<span class="cl" id="L132"><span class="ln" aria-hidden="true">132</span><span class="ct">/* "b2" or "B2" -&gt; location number, or -1 */</span></span>
+<span class="cl" id="L133"><span class="ln" aria-hidden="true">133</span><span class="ct">int findNode(const char *name) {</span></span>
+<span class="cl" id="L134"><span class="ln" aria-hidden="true">134</span><span class="ct">    char wanted[4];</span></span>
+<span class="cl" id="L135"><span class="ln" aria-hidden="true">135</span><span class="ct">    int i;</span></span>
+<span class="cl" id="L136"><span class="ln" aria-hidden="true">136</span><span class="ct"></span></span>
+<span class="cl" id="L137"><span class="ln" aria-hidden="true">137</span><span class="ct">    for (i = 0; name[i] != '\0' &amp;&amp; i &lt; 3; i++) {</span></span>
+<span class="cl" id="L138"><span class="ln" aria-hidden="true">138</span><span class="ct">        wanted[i] = name[i];</span></span>
+<span class="cl" id="L139"><span class="ln" aria-hidden="true">139</span><span class="ct">        if (wanted[i] &gt;= 'a' &amp;&amp; wanted[i] &lt;= 'z') wanted[i] -= 32;</span></span>
+<span class="cl" id="L140"><span class="ln" aria-hidden="true">140</span><span class="ct">    }</span></span>
+<span class="cl" id="L141"><span class="ln" aria-hidden="true">141</span><span class="ct">    wanted[i] = '\0';</span></span>
+<span class="cl" id="L142"><span class="ln" aria-hidden="true">142</span><span class="ct"></span></span>
+<span class="cl" id="L143"><span class="ln" aria-hidden="true">143</span><span class="ct">    for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L144"><span class="ln" aria-hidden="true">144</span><span class="ct">        if (strcmp(NAME[i], wanted) == 0) return i;</span></span>
+<span class="cl" id="L145"><span class="ln" aria-hidden="true">145</span><span class="ct">    }</span></span>
+<span class="cl" id="L146"><span class="ln" aria-hidden="true">146</span><span class="ct">    return -1;</span></span>
+<span class="cl" id="L147"><span class="ln" aria-hidden="true">147</span><span class="ct">}</span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="132"><span class="nl"><a href="#L132">132</a></span><span class="nt">Comment: accepts either case, returns a location number or <code>-1</code>.</span></li>
+<li class="note" data-lines="133"><span class="nl"><a href="#L133">133</a></span><span class="nt">Signature; the input is a read-only string.</span></li>
+<li class="note" data-lines="134"><span class="nl"><a href="#L134">134</a></span><span class="nt">A small buffer for the cleaned-up copy of the name.</span></li>
+<li class="note" data-lines="135"><span class="nl"><a href="#L135">135</a></span><span class="nt">Loop counter.</span></li>
+<li class="note" data-lines="137"><span class="nl"><a href="#L137">137</a></span><span class="nt">Copy the input, stopping at the end of the string or after 3 characters. Capping the length is what keeps the small buffer safe.</span></li>
+<li class="note" data-lines="138"><span class="nl"><a href="#L138">138</a></span><span class="nt">Copy one character across.</span></li>
+<li class="note" data-lines="139"><span class="nl"><a href="#L139">139</a></span><span class="nt">If it is a lowercase letter, subtract 32 to make it uppercase. ASCII letters are 32 apart, so this one line is why <code>c3</code> and <code>C3</code> both work.</span></li>
+<li class="note" data-lines="140"><span class="nl"><a href="#L140">140</a></span><span class="nt">Close the copy loop.</span></li>
+<li class="note" data-lines="141"><span class="nl"><a href="#L141">141</a></span><span class="nt">Terminate the copied string with <code>\0</code> at position <code>i</code>.</span></li>
+<li class="note" data-lines="143"><span class="nl"><a href="#L143">143</a></span><span class="nt">Search all 52 names.</span></li>
+<li class="note" data-lines="144"><span class="nl"><a href="#L144">144</a></span><span class="nt">If the stored name matches, return its index immediately.</span></li>
+<li class="note" data-lines="145"><span class="nl"><a href="#L145">145</a></span><span class="nt">Close the search loop.</span></li>
+<li class="note" data-lines="146"><span class="nl"><a href="#L146">146</a></span><span class="nt">Nothing matched, so report failure with <code>-1</code>. The caller turns that into an “unknown location” message.</span></li>
+<li class="note" data-lines="147"><span class="nl"><a href="#L147">147</a></span><span class="nt">End of <code>findNode</code>.</span></li>
+</ul>
+</section>
+
+<section id="u-printpath" class="unit" aria-labelledby="u-printpath-h">
+<h3 id="u-printpath-h">printPath</h3>
+<p class="purpose">Print a route as <code>A1 -&gt; B1 -&gt; ...</code> in the green route colour.</p>
+<div class="code" role="group" aria-label="printPath source code">
+<span class="cl" id="L148"><span class="ln" aria-hidden="true">148</span><span class="ct"></span></span>
+<span class="cl" id="L149"><span class="ln" aria-hidden="true">149</span><span class="ct">void printPath(int path[], int length) {</span></span>
+<span class="cl" id="L150"><span class="ln" aria-hidden="true">150</span><span class="ct">    int i;</span></span>
+<span class="cl" id="L151"><span class="ln" aria-hidden="true">151</span><span class="ct">    printf(BOLD GREEN);</span></span>
+<span class="cl" id="L152"><span class="ln" aria-hidden="true">152</span><span class="ct">    for (i = 0; i &lt; length; i++) {</span></span>
+<span class="cl" id="L153"><span class="ln" aria-hidden="true">153</span><span class="ct">        printf("%s", NAME[path[i]]);</span></span>
+<span class="cl" id="L154"><span class="ln" aria-hidden="true">154</span><span class="ct">        if (i &lt; length - 1) printf(" -&gt; ");</span></span>
+<span class="cl" id="L155"><span class="ln" aria-hidden="true">155</span><span class="ct">    }</span></span>
+<span class="cl" id="L156"><span class="ln" aria-hidden="true">156</span><span class="ct">    printf(RESET);</span></span>
+<span class="cl" id="L157"><span class="ln" aria-hidden="true">157</span><span class="ct">}</span></span>
+<span class="cl" id="L158"><span class="ln" aria-hidden="true">158</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="149"><span class="nl"><a href="#L149">149</a></span><span class="nt">Signature: <code>path[]</code> holds the location numbers in order and <code>length</code> says how many there are.</span></li>
+<li class="note" data-lines="150"><span class="nl"><a href="#L150">150</a></span><span class="nt">Loop counter.</span></li>
+<li class="note" data-lines="151"><span class="nl"><a href="#L151">151</a></span><span class="nt">Switch to the route colour once, so the whole line is coloured. This is the same bold green that <code>nameColor</code> returns for mark 1, keeping the route colour consistent.</span></li>
+<li class="note" data-lines="152"><span class="nl"><a href="#L152">152</a></span><span class="nt">Walk along the route.</span></li>
+<li class="note" data-lines="153"><span class="nl"><a href="#L153">153</a></span><span class="nt">Print the name of the current location.</span></li>
+<li class="note" data-lines="154"><span class="nl"><a href="#L154">154</a></span><span class="nt">Print the arrow only between locations — the check stops an arrow appearing after the last name.</span></li>
+<li class="note" data-lines="155"><span class="nl"><a href="#L155">155</a></span><span class="nt">Close the loop.</span></li>
+<li class="note" data-lines="156"><span class="nl"><a href="#L156">156</a></span><span class="nt">Turn colour off before the rest of the line is printed.</span></li>
+<li class="note" data-lines="157"><span class="nl"><a href="#L157">157</a></span><span class="nt">End of <code>printPath</code>.</span></li>
+</ul>
+</section>
+
+<section id="u-dijkstra" class="unit" aria-labelledby="u-dijkstra-h">
+<h3 id="u-dijkstra-h">dijkstra</h3>
+<p class="purpose">Find the cheapest route from <code>start</code> to <code>goal</code>, recording each place’s predecessor so the route can be rebuilt afterwards.</p>
+<div class="code" role="group" aria-label="dijkstra source code">
+<span class="cl" id="L159"><span class="ln" aria-hidden="true">159</span><span class="ct">/* O(N^2): settle the cheapest unfinished location each round, relax its neighbours */</span></span>
+<span class="cl" id="L160"><span class="ln" aria-hidden="true">160</span><span class="ct">int dijkstra(int start, int goal, int prev[], int *settledCount) {</span></span>
+<span class="cl" id="L161"><span class="ln" aria-hidden="true">161</span><span class="ct">    int dist[N], settled[N];</span></span>
+<span class="cl" id="L162"><span class="ln" aria-hidden="true">162</span><span class="ct">    int i, step;</span></span>
+<span class="cl" id="L163"><span class="ln" aria-hidden="true">163</span><span class="ct"></span></span>
+<span class="cl" id="L164"><span class="ln" aria-hidden="true">164</span><span class="ct">    for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L165"><span class="ln" aria-hidden="true">165</span><span class="ct">        dist[i] = INF;</span></span>
+<span class="cl" id="L166"><span class="ln" aria-hidden="true">166</span><span class="ct">        settled[i] = 0;</span></span>
+<span class="cl" id="L167"><span class="ln" aria-hidden="true">167</span><span class="ct">        prev[i] = -1;</span></span>
+<span class="cl" id="L168"><span class="ln" aria-hidden="true">168</span><span class="ct">    }</span></span>
+<span class="cl" id="L169"><span class="ln" aria-hidden="true">169</span><span class="ct">    dist[start] = 0;</span></span>
+<span class="cl" id="L170"><span class="ln" aria-hidden="true">170</span><span class="ct">    *settledCount = 0;</span></span>
+<span class="cl" id="L171"><span class="ln" aria-hidden="true">171</span><span class="ct"></span></span>
+<span class="cl" id="L172"><span class="ln" aria-hidden="true">172</span><span class="ct">    for (step = 0; step &lt; N; step++) {</span></span>
+<span class="cl" id="L173"><span class="ln" aria-hidden="true">173</span><span class="ct">        int u = -1;</span></span>
+<span class="cl" id="L174"><span class="ln" aria-hidden="true">174</span><span class="ct">        for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L175"><span class="ln" aria-hidden="true">175</span><span class="ct">            if (settled[i] == 0 &amp;&amp; dist[i] &lt; INF) {</span></span>
+<span class="cl" id="L176"><span class="ln" aria-hidden="true">176</span><span class="ct">                if (u == -1 || dist[i] &lt; dist[u]) u = i;</span></span>
+<span class="cl" id="L177"><span class="ln" aria-hidden="true">177</span><span class="ct">            }</span></span>
+<span class="cl" id="L178"><span class="ln" aria-hidden="true">178</span><span class="ct">        }</span></span>
+<span class="cl" id="L179"><span class="ln" aria-hidden="true">179</span><span class="ct">        if (u == -1) break;</span></span>
+<span class="cl" id="L180"><span class="ln" aria-hidden="true">180</span><span class="ct"></span></span>
+<span class="cl" id="L181"><span class="ln" aria-hidden="true">181</span><span class="ct">        settled[u] = 1;</span></span>
+<span class="cl" id="L182"><span class="ln" aria-hidden="true">182</span><span class="ct">        (*settledCount)++;</span></span>
+<span class="cl" id="L183"><span class="ln" aria-hidden="true">183</span><span class="ct"></span></span>
+<span class="cl" id="L184"><span class="ln" aria-hidden="true">184</span><span class="ct">        if (u == goal) break;</span></span>
+<span class="cl" id="L185"><span class="ln" aria-hidden="true">185</span><span class="ct"></span></span>
+<span class="cl" id="L186"><span class="ln" aria-hidden="true">186</span><span class="ct">        for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L187"><span class="ln" aria-hidden="true">187</span><span class="ct">            if (graph[u][i] != 0 &amp;&amp; dist[u] + graph[u][i] &lt; dist[i]) {</span></span>
+<span class="cl" id="L188"><span class="ln" aria-hidden="true">188</span><span class="ct">                dist[i] = dist[u] + graph[u][i];</span></span>
+<span class="cl" id="L189"><span class="ln" aria-hidden="true">189</span><span class="ct">                prev[i] = u;</span></span>
+<span class="cl" id="L190"><span class="ln" aria-hidden="true">190</span><span class="ct">            }</span></span>
+<span class="cl" id="L191"><span class="ln" aria-hidden="true">191</span><span class="ct">        }</span></span>
+<span class="cl" id="L192"><span class="ln" aria-hidden="true">192</span><span class="ct">    }</span></span>
+<span class="cl" id="L193"><span class="ln" aria-hidden="true">193</span><span class="ct">    return dist[goal];</span></span>
+<span class="cl" id="L194"><span class="ln" aria-hidden="true">194</span><span class="ct">}</span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="159"><span class="nl"><a href="#L159">159</a></span><span class="nt">Comment naming the cost: the function is O(N²) because each round scans all places for the cheapest unfinished one.</span></li>
+<li class="note" data-lines="160"><span class="nl"><a href="#L160">160</a></span><span class="nt">Signature. <code>prev[]</code> and <code>settledCount</code> are outputs: the caller receives the predecessor chain and the number of places settled.</span></li>
+<li class="note" data-lines="161"><span class="nl"><a href="#L161">161</a></span><span class="nt"><code>dist[i]</code> is the best distance found so far from the start to place <code>i</code>; <code>settled[i]</code> becomes 1 once that distance is final and can never improve.</span></li>
+<li class="note" data-lines="162"><span class="nl"><a href="#L162">162</a></span><span class="nt">Loop counters: <code>i</code> for scans, <code>step</code> for the outer rounds.</span></li>
+<li class="note" data-lines="164 165 166 167 168"><span class="nl"><a href="#L164">164–168</a></span><span class="nt">Initialise everything: every distance is <code>INF</code> (unknown), nothing is settled, and no place has a predecessor yet. This is the “we know nothing except the start” state.</span></li>
+<li class="note" data-lines="169"><span class="nl"><a href="#L169">169</a></span><span class="nt">The start is zero away from itself.</span></li>
+<li class="note" data-lines="170"><span class="nl"><a href="#L170">170</a></span><span class="nt">Zero the caller’s settled counter before counting.</span></li>
+<li class="note" data-lines="172"><span class="nl"><a href="#L172">172</a></span><span class="nt">The main loop, running at most once per place.</span></li>
+<li class="note" data-lines="173"><span class="nl"><a href="#L173">173</a></span><span class="nt"><code>u</code> will hold the cheapest unsettled place. Starting it at <code>-1</code> means “none found yet”.</span></li>
+<li class="note" data-lines="174"><span class="nl"><a href="#L174">174</a></span><span class="nt">Scan every place to find that cheapest one.</span></li>
+<li class="note" data-lines="175"><span class="nl"><a href="#L175">175</a></span><span class="nt">Only consider places that are both unsettled and actually reachable. The <code>dist[i] &lt; INF</code> guard is what skips places the search has not reached; this double condition is the O(N²) minimum scan named in the comment.</span></li>
+<li class="note" data-lines="176"><span class="nl"><a href="#L176">176</a></span><span class="nt">If this place is better than the best so far, remember it. The <code>u == -1</code> test handles the first candidate.</span></li>
+<li class="note" data-lines="177 178"><span class="nl"><a href="#L177">177–178</a></span><span class="nt">Close the inner if and the scan loop.</span></li>
+<li class="note" data-lines="179"><span class="nl"><a href="#L179">179</a></span><span class="nt">If no unsettled reachable place was found, the search has run out — stop.</span></li>
+<li class="note" data-lines="181"><span class="nl"><a href="#L181">181</a></span><span class="nt">Settle <code>u</code>. This is Dijkstra’s greedy step: the cheapest unfinished place has its distance final, because no route through any other unfinished place could be shorter.</span></li>
+<li class="note" data-lines="182"><span class="nl"><a href="#L182">182</a></span><span class="nt">Count it, so the caller can report how many places were settled.</span></li>
+<li class="note" data-lines="184"><span class="nl"><a href="#L184">184</a></span><span class="nt">If the place just settled is the goal, its distance is the answer, so stop early instead of settling the rest of the map.</span></li>
+<li class="note" data-lines="186"><span class="nl"><a href="#L186">186</a></span><span class="nt">Now look at every place to see if going through <code>u</code> improves it.</span></li>
+<li class="note" data-lines="187"><span class="nl"><a href="#L187">187</a></span><span class="nt">Two conditions: there must really be a road (<code>graph[u][i] != 0</code>), and the new way must be shorter than the best known way. This is the relaxation step; writing it as a strict <code>&lt;</code> means a tie leaves the existing route alone.</span></li>
+<li class="note" data-lines="188"><span class="nl"><a href="#L188">188</a></span><span class="nt">Record the shorter distance.</span></li>
+<li class="note" data-lines="189"><span class="nl"><a href="#L189">189</a></span><span class="nt">Record that the best way to <code>i</code> now comes from <code>u</code>. This predecessor is what <code>rebuildPath</code> follows later to recover the route.</span></li>
+<li class="note" data-lines="190 191 192"><span class="nl"><a href="#L190">190–192</a></span><span class="nt">Close the relaxation if, its loop, and the main loop.</span></li>
+<li class="note" data-lines="193"><span class="nl"><a href="#L193">193</a></span><span class="nt">Return the distance to the goal. If the goal was never reached it is still <code>INF</code>.</span></li>
+<li class="note" data-lines="194"><span class="nl"><a href="#L194">194</a></span><span class="nt">End of <code>dijkstra</code>.</span></li>
+</ul>
+</section>
+
+<section id="u-rebuild" class="unit" aria-labelledby="u-rebuild-h">
+<h3 id="u-rebuild-h">rebuildPath</h3>
+<p class="purpose">Walk the <code>prev[]</code> chain backwards from the goal to the start, then flip it into a forward route.</p>
+<div class="code" role="group" aria-label="rebuildPath source code">
+<span class="cl" id="L195"><span class="ln" aria-hidden="true">195</span><span class="ct"></span></span>
+<span class="cl" id="L196"><span class="ln" aria-hidden="true">196</span><span class="ct">int rebuildPath(int start, int goal, int prev[], int path[]) {</span></span>
+<span class="cl" id="L197"><span class="ln" aria-hidden="true">197</span><span class="ct">    int backward[N];</span></span>
+<span class="cl" id="L198"><span class="ln" aria-hidden="true">198</span><span class="ct">    int length = 0, i, cur = goal;</span></span>
+<span class="cl" id="L199"><span class="ln" aria-hidden="true">199</span><span class="ct"></span></span>
+<span class="cl" id="L200"><span class="ln" aria-hidden="true">200</span><span class="ct">    while (cur != -1) {</span></span>
+<span class="cl" id="L201"><span class="ln" aria-hidden="true">201</span><span class="ct">        backward[length++] = cur;</span></span>
+<span class="cl" id="L202"><span class="ln" aria-hidden="true">202</span><span class="ct">        cur = prev[cur];</span></span>
+<span class="cl" id="L203"><span class="ln" aria-hidden="true">203</span><span class="ct">    }</span></span>
+<span class="cl" id="L204"><span class="ln" aria-hidden="true">204</span><span class="ct">    if (backward[length - 1] != start) return 0;</span></span>
+<span class="cl" id="L205"><span class="ln" aria-hidden="true">205</span><span class="ct"></span></span>
+<span class="cl" id="L206"><span class="ln" aria-hidden="true">206</span><span class="ct">    for (i = 0; i &lt; length; i++) {</span></span>
+<span class="cl" id="L207"><span class="ln" aria-hidden="true">207</span><span class="ct">        path[i] = backward[length - 1 - i];</span></span>
+<span class="cl" id="L208"><span class="ln" aria-hidden="true">208</span><span class="ct">    }</span></span>
+<span class="cl" id="L209"><span class="ln" aria-hidden="true">209</span><span class="ct">    return length;</span></span>
+<span class="cl" id="L210"><span class="ln" aria-hidden="true">210</span><span class="ct">}</span></span>
+<span class="cl" id="L211"><span class="ln" aria-hidden="true">211</span><span class="ct"></span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="196"><span class="nl"><a href="#L196">196</a></span><span class="nt">Signature; it reads <code>prev[]</code> and writes the ordered route into <code>path[]</code>.</span></li>
+<li class="note" data-lines="197"><span class="nl"><a href="#L197">197</a></span><span class="nt">A temporary array that collects the route goal-first, the order the chain is naturally walked in.</span></li>
+<li class="note" data-lines="198"><span class="nl"><a href="#L198">198</a></span><span class="nt"><code>length</code> counts the places collected, <code>i</code> is a loop counter, and <code>cur</code> starts at the goal, the far end of the chain.</span></li>
+<li class="note" data-lines="200"><span class="nl"><a href="#L200">200</a></span><span class="nt">Keep walking while there is a valid place.</span></li>
+<li class="note" data-lines="201"><span class="nl"><a href="#L201">201</a></span><span class="nt">Store the current place and grow the length. The <code>length++</code> is post-increment, so the array is filled at the old index then length increases.</span></li>
+<li class="note" data-lines="202"><span class="nl"><a href="#L202">202</a></span><span class="nt">Step to the place we came from by following the predecessor chain.</span></li>
+<li class="note" data-lines="203"><span class="nl"><a href="#L203">203</a></span><span class="nt">Close the walk. The chain ends when <code>prev</code> is <code>-1</code>, the value the start has.</span></li>
+<li class="note" data-lines="204"><span class="nl"><a href="#L204">204</a></span><span class="nt">The last place reached should be the start. If it is not, the goal was unreachable, so report failure with 0. This is where “no route” becomes visible.</span></li>
+<li class="note" data-lines="206"><span class="nl"><a href="#L206">206</a></span><span class="nt">Now reverse the collected chain.</span></li>
+<li class="note" data-lines="207"><span class="nl"><a href="#L207">207</a></span><span class="nt">Copy from the end of <code>backward</code> into the start of <code>path</code>, which turns the goal-first chain into a start-first route.</span></li>
+<li class="note" data-lines="208"><span class="nl"><a href="#L208">208</a></span><span class="nt">Close the reverse loop.</span></li>
+<li class="note" data-lines="209"><span class="nl"><a href="#L209">209</a></span><span class="nt">Return the number of places in the route.</span></li>
+<li class="note" data-lines="210"><span class="nl"><a href="#L210">210</a></span><span class="nt">End of <code>rebuildPath</code>. Following parents from a node to a root is an iterative tree traversal — the natural place recursion could have appeared, but a loop is the honest form here.</span></li>
+</ul>
+</section>
+
+<section id="u-bidir" class="unit" aria-labelledby="u-bidir-h">
+<h3 id="u-bidir-h">bidirectionalDijkstra</h3>
+<p class="purpose">Search outward from the start and the goal at the same time, remember the cheapest place where the two searches meet, and rebuild the route through it.</p>
+<div class="code" role="group" aria-label="bidirectionalDijkstra source code">
+<span class="cl" id="L212"><span class="ln" aria-hidden="true">212</span><span class="ct">/* search from both ends; prevB[x] points towards the goal */</span></span>
+<span class="cl" id="L213"><span class="ln" aria-hidden="true">213</span><span class="ct">int bidirectionalDijkstra(int start, int goal, int path[], int *length,</span></span>
+<span class="cl" id="L214"><span class="ln" aria-hidden="true">214</span><span class="ct">                          int *settledF, int *settledB) {</span></span>
+<span class="cl" id="L215"><span class="ln" aria-hidden="true">215</span><span class="ct">    int distF[N], distB[N];</span></span>
+<span class="cl" id="L216"><span class="ln" aria-hidden="true">216</span><span class="ct">    int doneF[N], doneB[N];</span></span>
+<span class="cl" id="L217"><span class="ln" aria-hidden="true">217</span><span class="ct">    int prevF[N], prevB[N];</span></span>
+<span class="cl" id="L218"><span class="ln" aria-hidden="true">218</span><span class="ct">    int best = INF;</span></span>
+<span class="cl" id="L219"><span class="ln" aria-hidden="true">219</span><span class="ct">    int meet = -1;</span></span>
+<span class="cl" id="L220"><span class="ln" aria-hidden="true">220</span><span class="ct">    int i;</span></span>
+<span class="cl" id="L221"><span class="ln" aria-hidden="true">221</span><span class="ct"></span></span>
+<span class="cl" id="L222"><span class="ln" aria-hidden="true">222</span><span class="ct">    for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L223"><span class="ln" aria-hidden="true">223</span><span class="ct">        distF[i] = distB[i] = INF;</span></span>
+<span class="cl" id="L224"><span class="ln" aria-hidden="true">224</span><span class="ct">        doneF[i] = doneB[i] = 0;</span></span>
+<span class="cl" id="L225"><span class="ln" aria-hidden="true">225</span><span class="ct">        prevF[i] = prevB[i] = -1;</span></span>
+<span class="cl" id="L226"><span class="ln" aria-hidden="true">226</span><span class="ct">    }</span></span>
+<span class="cl" id="L227"><span class="ln" aria-hidden="true">227</span><span class="ct">    distF[start] = 0;</span></span>
+<span class="cl" id="L228"><span class="ln" aria-hidden="true">228</span><span class="ct">    distB[goal] = 0;</span></span>
+<span class="cl" id="L229"><span class="ln" aria-hidden="true">229</span><span class="ct"></span></span>
+<span class="cl" id="L230"><span class="ln" aria-hidden="true">230</span><span class="ct">    while (1) {</span></span>
+<span class="cl" id="L231"><span class="ln" aria-hidden="true">231</span><span class="ct">        int u = -1, v = -1;</span></span>
+<span class="cl" id="L232"><span class="ln" aria-hidden="true">232</span><span class="ct">        for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L233"><span class="ln" aria-hidden="true">233</span><span class="ct">            if (doneF[i] == 0 &amp;&amp; distF[i] &lt; INF &amp;&amp; (u == -1 || distF[i] &lt; distF[u])) u = i;</span></span>
+<span class="cl" id="L234"><span class="ln" aria-hidden="true">234</span><span class="ct">            if (doneB[i] == 0 &amp;&amp; distB[i] &lt; INF &amp;&amp; (v == -1 || distB[i] &lt; distB[v])) v = i;</span></span>
+<span class="cl" id="L235"><span class="ln" aria-hidden="true">235</span><span class="ct">        }</span></span>
+<span class="cl" id="L236"><span class="ln" aria-hidden="true">236</span><span class="ct">        if (u == -1 &amp;&amp; v == -1) break;</span></span>
+<span class="cl" id="L237"><span class="ln" aria-hidden="true">237</span><span class="ct"></span></span>
+<span class="cl" id="L238"><span class="ln" aria-hidden="true">238</span><span class="ct">        /* stop only when the frontiers can no longer beat `best` */</span></span>
+<span class="cl" id="L239"><span class="ln" aria-hidden="true">239</span><span class="ct">        if (u != -1 &amp;&amp; v != -1 &amp;&amp; distF[u] + distB[v] &gt;= best) break;</span></span>
+<span class="cl" id="L240"><span class="ln" aria-hidden="true">240</span><span class="ct"></span></span>
+<span class="cl" id="L241"><span class="ln" aria-hidden="true">241</span><span class="ct">        /* expand the closer side */</span></span>
+<span class="cl" id="L242"><span class="ln" aria-hidden="true">242</span><span class="ct">        if (u != -1 &amp;&amp; (v == -1 || distF[u] &lt;= distB[v])) {</span></span>
+<span class="cl" id="L243"><span class="ln" aria-hidden="true">243</span><span class="ct">            doneF[u] = 1;</span></span>
+<span class="cl" id="L244"><span class="ln" aria-hidden="true">244</span><span class="ct">            for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L245"><span class="ln" aria-hidden="true">245</span><span class="ct">                if (graph[u][i] != 0 &amp;&amp; distF[u] + graph[u][i] &lt; distF[i]) {</span></span>
+<span class="cl" id="L246"><span class="ln" aria-hidden="true">246</span><span class="ct">                    distF[i] = distF[u] + graph[u][i];</span></span>
+<span class="cl" id="L247"><span class="ln" aria-hidden="true">247</span><span class="ct">                    prevF[i] = u;</span></span>
+<span class="cl" id="L248"><span class="ln" aria-hidden="true">248</span><span class="ct">                }</span></span>
+<span class="cl" id="L249"><span class="ln" aria-hidden="true">249</span><span class="ct">            }</span></span>
+<span class="cl" id="L250"><span class="ln" aria-hidden="true">250</span><span class="ct">        } else {</span></span>
+<span class="cl" id="L251"><span class="ln" aria-hidden="true">251</span><span class="ct">            doneB[v] = 1;</span></span>
+<span class="cl" id="L252"><span class="ln" aria-hidden="true">252</span><span class="ct">            for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L253"><span class="ln" aria-hidden="true">253</span><span class="ct">                if (graph[v][i] != 0 &amp;&amp; distB[v] + graph[v][i] &lt; distB[i]) {</span></span>
+<span class="cl" id="L254"><span class="ln" aria-hidden="true">254</span><span class="ct">                    distB[i] = distB[v] + graph[v][i];</span></span>
+<span class="cl" id="L255"><span class="ln" aria-hidden="true">255</span><span class="ct">                    prevB[i] = v;</span></span>
+<span class="cl" id="L256"><span class="ln" aria-hidden="true">256</span><span class="ct">                }</span></span>
+<span class="cl" id="L257"><span class="ln" aria-hidden="true">257</span><span class="ct">            }</span></span>
+<span class="cl" id="L258"><span class="ln" aria-hidden="true">258</span><span class="ct">        }</span></span>
+<span class="cl" id="L259"><span class="ln" aria-hidden="true">259</span><span class="ct"></span></span>
+<span class="cl" id="L260"><span class="ln" aria-hidden="true">260</span><span class="ct">        /* best meeting point = cheapest route through a shared location */</span></span>
+<span class="cl" id="L261"><span class="ln" aria-hidden="true">261</span><span class="ct">        for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L262"><span class="ln" aria-hidden="true">262</span><span class="ct">            if (distF[i] &lt; INF &amp;&amp; distB[i] &lt; INF &amp;&amp; distF[i] + distB[i] &lt; best) {</span></span>
+<span class="cl" id="L263"><span class="ln" aria-hidden="true">263</span><span class="ct">                best = distF[i] + distB[i];</span></span>
+<span class="cl" id="L264"><span class="ln" aria-hidden="true">264</span><span class="ct">                meet = i;</span></span>
+<span class="cl" id="L265"><span class="ln" aria-hidden="true">265</span><span class="ct">            }</span></span>
+<span class="cl" id="L266"><span class="ln" aria-hidden="true">266</span><span class="ct">        }</span></span>
+<span class="cl" id="L267"><span class="ln" aria-hidden="true">267</span><span class="ct">    }</span></span>
+<span class="cl" id="L268"><span class="ln" aria-hidden="true">268</span><span class="ct"></span></span>
+<span class="cl" id="L269"><span class="ln" aria-hidden="true">269</span><span class="ct">    *settledF = 0;</span></span>
+<span class="cl" id="L270"><span class="ln" aria-hidden="true">270</span><span class="ct">    *settledB = 0;</span></span>
+<span class="cl" id="L271"><span class="ln" aria-hidden="true">271</span><span class="ct">    for (i = 0; i &lt; N; i++) {</span></span>
+<span class="cl" id="L272"><span class="ln" aria-hidden="true">272</span><span class="ct">        if (doneF[i]) (*settledF)++;</span></span>
+<span class="cl" id="L273"><span class="ln" aria-hidden="true">273</span><span class="ct">        if (doneB[i]) (*settledB)++;</span></span>
+<span class="cl" id="L274"><span class="ln" aria-hidden="true">274</span><span class="ct">    }</span></span>
+<span class="cl" id="L275"><span class="ln" aria-hidden="true">275</span><span class="ct"></span></span>
+<span class="cl" id="L276"><span class="ln" aria-hidden="true">276</span><span class="ct">    if (best == INF) return -1;</span></span>
+<span class="cl" id="L277"><span class="ln" aria-hidden="true">277</span><span class="ct"></span></span>
+<span class="cl" id="L278"><span class="ln" aria-hidden="true">278</span><span class="ct">    /* start -&gt; meet from prevF, then meet -&gt; goal from prevB */</span></span>
+<span class="cl" id="L279"><span class="ln" aria-hidden="true">279</span><span class="ct">    {</span></span>
+<span class="cl" id="L280"><span class="ln" aria-hidden="true">280</span><span class="ct">        int backward[N], nBack = 0, cur = meet, k = 0;</span></span>
+<span class="cl" id="L281"><span class="ln" aria-hidden="true">281</span><span class="ct">        while (cur != -1) {</span></span>
+<span class="cl" id="L282"><span class="ln" aria-hidden="true">282</span><span class="ct">            backward[nBack++] = cur;</span></span>
+<span class="cl" id="L283"><span class="ln" aria-hidden="true">283</span><span class="ct">            cur = prevF[cur];</span></span>
+<span class="cl" id="L284"><span class="ln" aria-hidden="true">284</span><span class="ct">        }</span></span>
+<span class="cl" id="L285"><span class="ln" aria-hidden="true">285</span><span class="ct">        for (i = nBack - 1; i &gt;= 0; i--) path[k++] = backward[i];</span></span>
+<span class="cl" id="L286"><span class="ln" aria-hidden="true">286</span><span class="ct">        cur = prevB[meet];</span></span>
+<span class="cl" id="L287"><span class="ln" aria-hidden="true">287</span><span class="ct">        while (cur != -1) {</span></span>
+<span class="cl" id="L288"><span class="ln" aria-hidden="true">288</span><span class="ct">            path[k++] = cur;</span></span>
+<span class="cl" id="L289"><span class="ln" aria-hidden="true">289</span><span class="ct">            cur = prevB[cur];</span></span>
+<span class="cl" id="L290"><span class="ln" aria-hidden="true">290</span><span class="ct">        }</span></span>
+<span class="cl" id="L291"><span class="ln" aria-hidden="true">291</span><span class="ct">        *length = k;</span></span>
+<span class="cl" id="L292"><span class="ln" aria-hidden="true">292</span><span class="ct">        return best;</span></span>
+<span class="cl" id="L293"><span class="ln" aria-hidden="true">293</span><span class="ct">    }</span></span>
+<span class="cl" id="L294"><span class="ln" aria-hidden="true">294</span><span class="ct">}</span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="212"><span class="nl"><a href="#L212">212</a></span><span class="nt">Comment: the search runs from both ends, and <code>prevB[x]</code> points towards the goal.</span></li>
+<li class="note" data-lines="213 214"><span class="nl"><a href="#L213">213–214</a></span><span class="nt">Signature. It returns the route cost, and fills <code>path</code>, <code>length</code>, and the two settled counters.</span></li>
+<li class="note" data-lines="215"><span class="nl"><a href="#L215">215</a></span><span class="nt"><code>distF</code> holds distances measured from the start (forward) and <code>distB</code> distances measured from the goal (backward).</span></li>
+<li class="note" data-lines="216"><span class="nl"><a href="#L216">216</a></span><span class="nt"><code>doneF</code> and <code>doneB</code> are the settled flags for each side.</span></li>
+<li class="note" data-lines="217"><span class="nl"><a href="#L217">217</a></span><span class="nt">The two predecessor arrays. They point in opposite directions: <code>prevF</code> points back towards the start, because the forward search grew out of the start, while <code>prevB</code> points towards the goal, because the backward search grew out of the goal.</span></li>
+<li class="note" data-lines="218"><span class="nl"><a href="#L218">218</a></span><span class="nt"><code>best</code> is the cheapest complete route found so far, starting at <code>INF</code> because none is known yet.</span></li>
+<li class="note" data-lines="219"><span class="nl"><a href="#L219">219</a></span><span class="nt"><code>meet</code> will be the place that <code>best</code> passes through.</span></li>
+<li class="note" data-lines="220"><span class="nl"><a href="#L220">220</a></span><span class="nt">Loop counter.</span></li>
+<li class="note" data-lines="222 223 224 225 226"><span class="nl"><a href="#L222">222–226</a></span><span class="nt">Initialise all four arrays for both sides at once: unknown distances, nothing settled, no predecessors.</span></li>
+<li class="note" data-lines="227"><span class="nl"><a href="#L227">227</a></span><span class="nt">The forward search begins at the start with distance 0.</span></li>
+<li class="note" data-lines="228"><span class="nl"><a href="#L228">228</a></span><span class="nt">The backward search begins at the goal with distance 0. From here the two searches are symmetric.</span></li>
+<li class="note" data-lines="230"><span class="nl"><a href="#L230">230</a></span><span class="nt">Loop “forever”; the breaks inside decide when to stop.</span></li>
+<li class="note" data-lines="231"><span class="nl"><a href="#L231">231</a></span><span class="nt"><code>u</code> and <code>v</code> will be the cheapest frontier places for the forward and backward searches.</span></li>
+<li class="note" data-lines="232"><span class="nl"><a href="#L232">232</a></span><span class="nt">One scan of all places serves both sides.</span></li>
+<li class="note" data-lines="233"><span class="nl"><a href="#L233">233</a></span><span class="nt">Find the forward side’s cheapest unsettled reachable place.</span></li>
+<li class="note" data-lines="234"><span class="nl"><a href="#L234">234</a></span><span class="nt">And the same for the backward side.</span></li>
+<li class="note" data-lines="235"><span class="nl"><a href="#L235">235</a></span><span class="nt">Close the scan.</span></li>
+<li class="note" data-lines="236"><span class="nl"><a href="#L236">236</a></span><span class="nt">If neither side has anywhere left to grow, both searches are exhausted — stop.</span></li>
+<li class="note" data-lines="238"><span class="nl"><a href="#L238">238</a></span><span class="nt">Comment describing the safe stopping rule.</span></li>
+<li class="note" data-lines="239"><span class="nl"><a href="#L239">239</a></span><span class="nt">The important stop test. When the two cheapest frontiers add up to <code>best</code> or more, no future route can beat what is already found, so stop. The <code>&gt;=</code> is deliberate: it stops as soon as the frontiers can only tie or lose. Stopping the moment the two searches merely touch would be wrong, because a place they touch is not necessarily on the cheapest route.</span></li>
+<li class="note" data-lines="241"><span class="nl"><a href="#L241">241</a></span><span class="nt">Comment: expand whichever side is currently cheaper.</span></li>
+<li class="note" data-lines="242"><span class="nl"><a href="#L242">242</a></span><span class="nt">Expand the forward side when it is available and not more expensive than the backward side; otherwise expand backward. Keeping the two frontiers balanced is what makes the meeting happen in the middle.</span></li>
+<li class="note" data-lines="243"><span class="nl"><a href="#L243">243</a></span><span class="nt">Settle <code>u</code> on the forward side.</span></li>
+<li class="note" data-lines="244"><span class="nl"><a href="#L244">244</a></span><span class="nt">Look at every place to relax it.</span></li>
+<li class="note" data-lines="245"><span class="nl"><a href="#L245">245</a></span><span class="nt">The same relaxation as plain Dijkstra — a road must exist and the new way must be shorter — but this time it improves <code>distF</code>.</span></li>
+<li class="note" data-lines="246"><span class="nl"><a href="#L246">246</a></span><span class="nt">Record the shorter forward distance.</span></li>
+<li class="note" data-lines="247"><span class="nl"><a href="#L247">247</a></span><span class="nt">Record the forward predecessor, pointing back towards the start.</span></li>
+<li class="note" data-lines="248 249"><span class="nl"><a href="#L248">248–249</a></span><span class="nt">Close the forward relaxation and its loop.</span></li>
+<li class="note" data-lines="250"><span class="nl"><a href="#L250">250</a></span><span class="nt">Otherwise expand the backward side.</span></li>
+<li class="note" data-lines="251"><span class="nl"><a href="#L251">251</a></span><span class="nt">Settle <code>v</code> on the backward side.</span></li>
+<li class="note" data-lines="252"><span class="nl"><a href="#L252">252</a></span><span class="nt">Look at every place to relax it.</span></li>
+<li class="note" data-lines="253"><span class="nl"><a href="#L253">253</a></span><span class="nt">Relax <code>distB</code> from <code>v</code>. Because the roads are undirected, “the places joined to <code>v</code>” are exactly the places that can reach <code>v</code>, so this backward growth over the same matrix is correct.</span></li>
+<li class="note" data-lines="254"><span class="nl"><a href="#L254">254</a></span><span class="nt">Record the shorter backward distance.</span></li>
+<li class="note" data-lines="255"><span class="nl"><a href="#L255">255</a></span><span class="nt">Record the backward predecessor, pointing towards the goal.</span></li>
+<li class="note" data-lines="256 257 258"><span class="nl"><a href="#L256">256–258</a></span><span class="nt">Close the backward relaxation, its loop, and the else branch.</span></li>
+<li class="note" data-lines="260"><span class="nl"><a href="#L260">260</a></span><span class="nt">Comment: now find the best place for the two searches to meet.</span></li>
+<li class="note" data-lines="261"><span class="nl"><a href="#L261">261</a></span><span class="nt">Scan every place.</span></li>
+<li class="note" data-lines="262"><span class="nl"><a href="#L262">262</a></span><span class="nt">A place both searches have reached gives a complete route whose length is the two halves added together. If that beats <code>best</code>…</span></li>
+<li class="note" data-lines="263"><span class="nl"><a href="#L263">263</a></span><span class="nt">…update <code>best</code>…</span></li>
+<li class="note" data-lines="264"><span class="nl"><a href="#L264">264</a></span><span class="nt">…and remember this place as the meeting point.</span></li>
+<li class="note" data-lines="265 266"><span class="nl"><a href="#L265">265–266</a></span><span class="nt">Close the check and the scan.</span></li>
+<li class="note" data-lines="267"><span class="nl"><a href="#L267">267</a></span><span class="nt">End of one round of the loop.</span></li>
+<li class="note" data-lines="269 270"><span class="nl"><a href="#L269">269–270</a></span><span class="nt">Zero the two settled counters before counting.</span></li>
+<li class="note" data-lines="271"><span class="nl"><a href="#L271">271</a></span><span class="nt">Scan every place.</span></li>
+<li class="note" data-lines="272"><span class="nl"><a href="#L272">272</a></span><span class="nt">Count the forward-settled places.</span></li>
+<li class="note" data-lines="273"><span class="nl"><a href="#L273">273</a></span><span class="nt">Count the backward-settled places.</span></li>
+<li class="note" data-lines="274"><span class="nl"><a href="#L274">274</a></span><span class="nt">Close the scan.</span></li>
+<li class="note" data-lines="276"><span class="nl"><a href="#L276">276</a></span><span class="nt">If <code>best</code> is still <code>INF</code>, the two searches never met and there is no route; report <code>-1</code>.</span></li>
+<li class="note" data-lines="278"><span class="nl"><a href="#L278">278</a></span><span class="nt">Comment: now stitch the route together from the two halves.</span></li>
+<li class="note" data-lines="279"><span class="nl"><a href="#L279">279</a></span><span class="nt">A small block, so these locals only exist at the end of the function.</span></li>
+<li class="note" data-lines="280"><span class="nl"><a href="#L280">280</a></span><span class="nt"><code>backward</code> collects the start-to-meet half (in reverse), <code>nBack</code> counts it, <code>cur</code> starts at the meeting place, and <code>k</code> counts the finished route.</span></li>
+<li class="note" data-lines="281"><span class="nl"><a href="#L281">281</a></span><span class="nt">Walk from the meet back towards the start.</span></li>
+<li class="note" data-lines="282"><span class="nl"><a href="#L282">282</a></span><span class="nt">Collect the current place.</span></li>
+<li class="note" data-lines="283"><span class="nl"><a href="#L283">283</a></span><span class="nt">Follow the forward predecessors, which point towards the start.</span></li>
+<li class="note" data-lines="284"><span class="nl"><a href="#L284">284</a></span><span class="nt">Close the walk.</span></li>
+<li class="note" data-lines="285"><span class="nl"><a href="#L285">285</a></span><span class="nt">Reverse that half into <code>path</code>, so the route now begins at the start and ends at the meeting place.</span></li>
+<li class="note" data-lines="286"><span class="nl"><a href="#L286">286</a></span><span class="nt">Then take the meet-to-goal half by starting at the place after the meet along the backward chain.</span></li>
+<li class="note" data-lines="287"><span class="nl"><a href="#L287">287</a></span><span class="nt">Walk while there are more places.</span></li>
+<li class="note" data-lines="288"><span class="nl"><a href="#L288">288</a></span><span class="nt">Append each place to the route.</span></li>
+<li class="note" data-lines="289"><span class="nl"><a href="#L289">289</a></span><span class="nt">Follow the backward predecessors, which point towards the goal.</span></li>
+<li class="note" data-lines="290"><span class="nl"><a href="#L290">290</a></span><span class="nt">Close the walk.</span></li>
+<li class="note" data-lines="291"><span class="nl"><a href="#L291">291</a></span><span class="nt">Report the finished route length through the pointer.</span></li>
+<li class="note" data-lines="292"><span class="nl"><a href="#L292">292</a></span><span class="nt">Return the best cost.</span></li>
+<li class="note" data-lines="293"><span class="nl"><a href="#L293">293</a></span><span class="nt">Close the inner block.</span></li>
+<li class="note" data-lines="294"><span class="nl"><a href="#L294">294</a></span><span class="nt">End of <code>bidirectionalDijkstra</code>. The two reconstructions — forward half reversed, then backward half appended directly — are what turn one meeting place into one ordered route.</span></li>
+</ul>
+</section>
+
+<section id="u-main" class="unit" aria-labelledby="u-main-h">
+<h3 id="u-main-h">main</h3>
+<p class="purpose">Set up and print the map, then repeatedly read two locations, run both searches, print their routes and costs, and draw the chosen route on the map.</p>
+<div class="code" role="group" aria-label="main source code">
+<span class="cl" id="L295"><span class="ln" aria-hidden="true">295</span><span class="ct"></span></span>
+<span class="cl" id="L296"><span class="ln" aria-hidden="true">296</span><span class="ct">int main(void) {</span></span>
+<span class="cl" id="L297"><span class="ln" aria-hidden="true">297</span><span class="ct">    char line[64], firstName[16], secondName[16];</span></span>
+<span class="cl" id="L298"><span class="ln" aria-hidden="true">298</span><span class="ct">    int start, goal, words, length, cost, settled;</span></span>
+<span class="cl" id="L299"><span class="ln" aria-hidden="true">299</span><span class="ct">    int prev[N], path[N];</span></span>
+<span class="cl" id="L300"><span class="ln" aria-hidden="true">300</span><span class="ct"></span></span>
+<span class="cl" id="L301"><span class="ln" aria-hidden="true">301</span><span class="ct">    setupConsole();</span></span>
+<span class="cl" id="L302"><span class="ln" aria-hidden="true">302</span><span class="ct">    buildNames();</span></span>
+<span class="cl" id="L303"><span class="ln" aria-hidden="true">303</span><span class="ct">    buildGraph();</span></span>
+<span class="cl" id="L304"><span class="ln" aria-hidden="true">304</span><span class="ct">    printGraph(NULL);</span></span>
+<span class="cl" id="L305"><span class="ln" aria-hidden="true">305</span><span class="ct"></span></span>
+<span class="cl" id="L306"><span class="ln" aria-hidden="true">306</span><span class="ct">    printf("\nType two locations to connect, e.g.  A1 M4\n");</span></span>
+<span class="cl" id="L307"><span class="ln" aria-hidden="true">307</span><span class="ct">    printf("Press Enter on its own for the default A1 -&gt; M4, or type q to quit.\n");</span></span>
+<span class="cl" id="L308"><span class="ln" aria-hidden="true">308</span><span class="ct"></span></span>
+<span class="cl" id="L309"><span class="ln" aria-hidden="true">309</span><span class="ct">    while (1) {</span></span>
+<span class="cl" id="L310"><span class="ln" aria-hidden="true">310</span><span class="ct">        printf("\n&gt; ");</span></span>
+<span class="cl" id="L311"><span class="ln" aria-hidden="true">311</span><span class="ct">        if (fgets(line, sizeof(line), stdin) == NULL) break;   /* end of input */</span></span>
+<span class="cl" id="L312"><span class="ln" aria-hidden="true">312</span><span class="ct">        if (line[0] == 'q' || line[0] == 'Q') break;</span></span>
+<span class="cl" id="L313"><span class="ln" aria-hidden="true">313</span><span class="ct"></span></span>
+<span class="cl" id="L314"><span class="ln" aria-hidden="true">314</span><span class="ct">        words = sscanf(line, "%15s %15s", firstName, secondName);</span></span>
+<span class="cl" id="L315"><span class="ln" aria-hidden="true">315</span><span class="ct">        if (words != 2) {          /* Enter on its own: use the default pair */</span></span>
+<span class="cl" id="L316"><span class="ln" aria-hidden="true">316</span><span class="ct">            strcpy(firstName, "A1");</span></span>
+<span class="cl" id="L317"><span class="ln" aria-hidden="true">317</span><span class="ct">            strcpy(secondName, "M4");</span></span>
+<span class="cl" id="L318"><span class="ln" aria-hidden="true">318</span><span class="ct">        }</span></span>
+<span class="cl" id="L319"><span class="ln" aria-hidden="true">319</span><span class="ct"></span></span>
+<span class="cl" id="L320"><span class="ln" aria-hidden="true">320</span><span class="ct">        start = findNode(firstName);</span></span>
+<span class="cl" id="L321"><span class="ln" aria-hidden="true">321</span><span class="ct">        goal  = findNode(secondName);</span></span>
+<span class="cl" id="L322"><span class="ln" aria-hidden="true">322</span><span class="ct">        if (start == -1 || goal == -1) {</span></span>
+<span class="cl" id="L323"><span class="ln" aria-hidden="true">323</span><span class="ct">            printf("Unknown location - use names like A1, c3 or M4.\n");</span></span>
+<span class="cl" id="L324"><span class="ln" aria-hidden="true">324</span><span class="ct">            continue;</span></span>
+<span class="cl" id="L325"><span class="ln" aria-hidden="true">325</span><span class="ct">        }</span></span>
+<span class="cl" id="L326"><span class="ln" aria-hidden="true">326</span><span class="ct">        if (start == goal) {</span></span>
+<span class="cl" id="L327"><span class="ln" aria-hidden="true">327</span><span class="ct">            printf("Start and goal are the same place!\n");</span></span>
+<span class="cl" id="L328"><span class="ln" aria-hidden="true">328</span><span class="ct">            continue;</span></span>
+<span class="cl" id="L329"><span class="ln" aria-hidden="true">329</span><span class="ct">        }</span></span>
+<span class="cl" id="L330"><span class="ln" aria-hidden="true">330</span><span class="ct"></span></span>
+<span class="cl" id="L331"><span class="ln" aria-hidden="true">331</span><span class="ct">        printf("\n================ FINDING ROUTE %s -&gt; %s ================\n",</span></span>
+<span class="cl" id="L332"><span class="ln" aria-hidden="true">332</span><span class="ct">               NAME[start], NAME[goal]);</span></span>
+<span class="cl" id="L333"><span class="ln" aria-hidden="true">333</span><span class="ct"></span></span>
+<span class="cl" id="L334"><span class="ln" aria-hidden="true">334</span><span class="ct">        cost = dijkstra(start, goal, prev, &amp;settled);</span></span>
+<span class="cl" id="L335"><span class="ln" aria-hidden="true">335</span><span class="ct">        length = rebuildPath(start, goal, prev, path);</span></span>
+<span class="cl" id="L336"><span class="ln" aria-hidden="true">336</span><span class="ct">        if (length == 0) {</span></span>
+<span class="cl" id="L337"><span class="ln" aria-hidden="true">337</span><span class="ct">            printf("There is no route between these locations.\n");</span></span>
+<span class="cl" id="L338"><span class="ln" aria-hidden="true">338</span><span class="ct">            continue;</span></span>
+<span class="cl" id="L339"><span class="ln" aria-hidden="true">339</span><span class="ct">        }</span></span>
+<span class="cl" id="L340"><span class="ln" aria-hidden="true">340</span><span class="ct">        printf("\n" BOLD CYAN "NORMAL DIJKSTRA" RESET "\n  route : ");</span></span>
+<span class="cl" id="L341"><span class="ln" aria-hidden="true">341</span><span class="ct">        printPath(path, length);</span></span>
+<span class="cl" id="L342"><span class="ln" aria-hidden="true">342</span><span class="ct">        printf("\n  cost  : %d\n", cost);</span></span>
+<span class="cl" id="L343"><span class="ln" aria-hidden="true">343</span><span class="ct">        printf("  places settled: %d (out of %d)\n", settled, N);</span></span>
+<span class="cl" id="L344"><span class="ln" aria-hidden="true">344</span><span class="ct"></span></span>
+<span class="cl" id="L345"><span class="ln" aria-hidden="true">345</span><span class="ct">        {</span></span>
+<span class="cl" id="L346"><span class="ln" aria-hidden="true">346</span><span class="ct">            int path[2 * N], cost, settledF, settledB, length;</span></span>
+<span class="cl" id="L347"><span class="ln" aria-hidden="true">347</span><span class="ct">            cost = bidirectionalDijkstra(start, goal, path, &amp;length, &amp;settledF, &amp;settledB);</span></span>
+<span class="cl" id="L348"><span class="ln" aria-hidden="true">348</span><span class="ct">            if (cost == -1) {</span></span>
+<span class="cl" id="L349"><span class="ln" aria-hidden="true">349</span><span class="ct">                printf("\nThere is no route between these locations.\n");</span></span>
+<span class="cl" id="L350"><span class="ln" aria-hidden="true">350</span><span class="ct">                continue;</span></span>
+<span class="cl" id="L351"><span class="ln" aria-hidden="true">351</span><span class="ct">            }</span></span>
+<span class="cl" id="L352"><span class="ln" aria-hidden="true">352</span><span class="ct"></span></span>
+<span class="cl" id="L353"><span class="ln" aria-hidden="true">353</span><span class="ct">            printf("\n" BOLD CYAN "BIDIRECTIONAL DIJKSTRA" RESET "\n  route : ");</span></span>
+<span class="cl" id="L354"><span class="ln" aria-hidden="true">354</span><span class="ct">            printPath(path, length);</span></span>
+<span class="cl" id="L355"><span class="ln" aria-hidden="true">355</span><span class="ct">            printf("\n  cost  : %d\n", cost);</span></span>
+<span class="cl" id="L356"><span class="ln" aria-hidden="true">356</span><span class="ct">            printf("  places settled: %d forward + %d backward = %d (out of %d)\n",</span></span>
+<span class="cl" id="L357"><span class="ln" aria-hidden="true">357</span><span class="ct">                   settledF, settledB, settledF + settledB, N);</span></span>
+<span class="cl" id="L358"><span class="ln" aria-hidden="true">358</span><span class="ct">        }</span></span>
+<span class="cl" id="L359"><span class="ln" aria-hidden="true">359</span><span class="ct"></span></span>
+<span class="cl" id="L360"><span class="ln" aria-hidden="true">360</span><span class="ct">        printf("\nBoth algorithms found the same route, as they should.\n");</span></span>
+<span class="cl" id="L361"><span class="ln" aria-hidden="true">361</span><span class="ct"></span></span>
+<span class="cl" id="L362"><span class="ln" aria-hidden="true">362</span><span class="ct">        /* draw the map again, with this route marked on it */</span></span>
+<span class="cl" id="L363"><span class="ln" aria-hidden="true">363</span><span class="ct">        {</span></span>
+<span class="cl" id="L364"><span class="ln" aria-hidden="true">364</span><span class="ct">            int i, mark[N];</span></span>
+<span class="cl" id="L365"><span class="ln" aria-hidden="true">365</span><span class="ct">            for (i = 0; i &lt; N; i++) mark[i] = 0;</span></span>
+<span class="cl" id="L366"><span class="ln" aria-hidden="true">366</span><span class="ct">            for (i = 0; i &lt; length; i++) mark[path[i]] = 1;</span></span>
+<span class="cl" id="L367"><span class="ln" aria-hidden="true">367</span><span class="ct">            mark[start] = 2;</span></span>
+<span class="cl" id="L368"><span class="ln" aria-hidden="true">368</span><span class="ct">            mark[goal]  = 3;</span></span>
+<span class="cl" id="L369"><span class="ln" aria-hidden="true">369</span><span class="ct">            printf("\n");</span></span>
+<span class="cl" id="L370"><span class="ln" aria-hidden="true">370</span><span class="ct">            printGraph(mark);</span></span>
+<span class="cl" id="L371"><span class="ln" aria-hidden="true">371</span><span class="ct">        }</span></span>
+<span class="cl" id="L372"><span class="ln" aria-hidden="true">372</span><span class="ct">    }</span></span>
+<span class="cl" id="L373"><span class="ln" aria-hidden="true">373</span><span class="ct"></span></span>
+<span class="cl" id="L374"><span class="ln" aria-hidden="true">374</span><span class="ct">    printf("\nGoodbye.\n");</span></span>
+<span class="cl" id="L375"><span class="ln" aria-hidden="true">375</span><span class="ct">    return 0;</span></span>
+<span class="cl" id="L376"><span class="ln" aria-hidden="true">376</span><span class="ct">}</span></span>
+</div>
+<ul class="notes">
+<li class="note" data-lines="296"><span class="nl"><a href="#L296">296</a></span><span class="nt">Program entry point; <code>void</code> means it takes no command-line arguments.</span></li>
+<li class="note" data-lines="297"><span class="nl"><a href="#L297">297</a></span><span class="nt"><code>line</code> holds a whole typed line; the two name buffers are 16 characters, matching the 15-character cap used when reading.</span></li>
+<li class="note" data-lines="298"><span class="nl"><a href="#L298">298</a></span><span class="nt">Working variables: the two location numbers, <code>words</code> (how many names were read), the route length, its cost, and the settled count.</span></li>
+<li class="note" data-lines="299"><span class="nl"><a href="#L299">299</a></span><span class="nt">Scratch arrays for the plain Dijkstra run: predecessors and the rebuilt route.</span></li>
+<li class="note" data-lines="301"><span class="nl"><a href="#L301">301</a></span><span class="nt">Fix the console first, so everything printed afterwards — box characters and colours — displays correctly.</span></li>
+<li class="note" data-lines="302"><span class="nl"><a href="#L302">302</a></span><span class="nt">Fill the name table.</span></li>
+<li class="note" data-lines="303"><span class="nl"><a href="#L303">303</a></span><span class="nt">Build the weighted graph.</span></li>
+<li class="note" data-lines="304"><span class="nl"><a href="#L304">304</a></span><span class="nt">Draw the plain map. <code>NULL</code> means “no marks”, so no legend and no coloured labels.</span></li>
+<li class="note" data-lines="306 307"><span class="nl"><a href="#L306">306–307</a></span><span class="nt">Print the two instruction lines: how to enter locations and that an empty line uses the default. The <code>\n</code> at the front of each leaves a blank line above.</span></li>
+<li class="note" data-lines="309"><span class="nl"><a href="#L309">309</a></span><span class="nt">The read-and-route loop: one pass per pair of locations.</span></li>
+<li class="note" data-lines="310"><span class="nl"><a href="#L310">310</a></span><span class="nt">Print the prompt <code>&gt; </code> on its own line.</span></li>
+<li class="note" data-lines="311"><span class="nl"><a href="#L311">311</a></span><span class="nt">Read one line from standard input. A <code>NULL</code> return means the input has ended (for example the program was piped a fixed input that has run out), so break out and quit.</span></li>
+<li class="note" data-lines="312"><span class="nl"><a href="#L312">312</a></span><span class="nt">A first character of <code>q</code> or <code>Q</code> quits. Checking only the first character means a bare <code>q</code> is enough.</span></li>
+<li class="note" data-lines="314"><span class="nl"><a href="#L314">314</a></span><span class="nt">Split the line into two words, each at most 15 characters so the buffers cannot overflow. <code>words</code> is 2 only when both names were found.</span></li>
+<li class="note" data-lines="315"><span class="nl"><a href="#L315">315</a></span><span class="nt">If not exactly two words were read — including the case of an empty line…</span></li>
+<li class="note" data-lines="316 317"><span class="nl"><a href="#L316">316–317</a></span><span class="nt">…use the default pair, <code>A1</code> and <code>M4</code>. This is how “press Enter on its own” works.</span></li>
+<li class="note" data-lines="318"><span class="nl"><a href="#L318">318</a></span><span class="nt">Close the default branch.</span></li>
+<li class="note" data-lines="320"><span class="nl"><a href="#L320">320</a></span><span class="nt">Look up the first name.</span></li>
+<li class="note" data-lines="321"><span class="nl"><a href="#L321">321</a></span><span class="nt">Look up the second name.</span></li>
+<li class="note" data-lines="322"><span class="nl"><a href="#L322">322</a></span><span class="nt">If either name was not recognised…</span></li>
+<li class="note" data-lines="323"><span class="nl"><a href="#L323">323</a></span><span class="nt">…print an example of the accepted form.</span></li>
+<li class="note" data-lines="324"><span class="nl"><a href="#L324">324</a></span><span class="nt">…and skip to the next round with <code>continue</code>, so no search is run.</span></li>
+<li class="note" data-lines="325"><span class="nl"><a href="#L325">325</a></span><span class="nt">Close the unknown-name check.</span></li>
+<li class="note" data-lines="326"><span class="nl"><a href="#L326">326</a></span><span class="nt">If the two names are the same place…</span></li>
+<li class="note" data-lines="327"><span class="nl"><a href="#L327">327</a></span><span class="nt">…say so.</span></li>
+<li class="note" data-lines="328"><span class="nl"><a href="#L328">328</a></span><span class="nt">…and ask again.</span></li>
+<li class="note" data-lines="329"><span class="nl"><a href="#L329">329</a></span><span class="nt">Close the same-place check.</span></li>
+<li class="note" data-lines="331 332"><span class="nl"><a href="#L331">331–332</a></span><span class="nt">Print the banner, using the canonical names from <code>NAME</code> so the output shows <code>A1</code> even if the user typed <code>a1</code>.</span></li>
+<li class="note" data-lines="334"><span class="nl"><a href="#L334">334</a></span><span class="nt">Run plain Dijkstra. The <code>&amp;settled</code> argument lets the function report how many places it settled.</span></li>
+<li class="note" data-lines="335"><span class="nl"><a href="#L335">335</a></span><span class="nt">Turn the predecessor chain into an ordered route.</span></li>
+<li class="note" data-lines="336"><span class="nl"><a href="#L336">336</a></span><span class="nt">A zero length means no route was found…</span></li>
+<li class="note" data-lines="337"><span class="nl"><a href="#L337">337</a></span><span class="nt">…so say so…</span></li>
+<li class="note" data-lines="338"><span class="nl"><a href="#L338">338</a></span><span class="nt">…and skip the rest of this round.</span></li>
+<li class="note" data-lines="339"><span class="nl"><a href="#L339">339</a></span><span class="nt">Close the no-route check.</span></li>
+<li class="note" data-lines="340"><span class="nl"><a href="#L340">340</a></span><span class="nt">Print the “NORMAL DIJKSTRA” heading and begin the route line.</span></li>
+<li class="note" data-lines="341"><span class="nl"><a href="#L341">341</a></span><span class="nt">Print the route itself, in green.</span></li>
+<li class="note" data-lines="342"><span class="nl"><a href="#L342">342</a></span><span class="nt">Print the total cost.</span></li>
+<li class="note" data-lines="343"><span class="nl"><a href="#L343">343</a></span><span class="nt">Print how many places plain Dijkstra settled, out of all 52.</span></li>
+<li class="note" data-lines="345"><span class="nl"><a href="#L345">345</a></span><span class="nt">Open a block for the second search. Its local variables shadow the outer ones of the same names, so the two algorithms cannot interfere.</span></li>
+<li class="note" data-lines="346"><span class="nl"><a href="#L346">346</a></span><span class="nt">The bidirectional route uses a buffer of <code>2 * N</code> places, with its own cost, length and two settled counts.</span></li>
+<li class="note" data-lines="347"><span class="nl"><a href="#L347">347</a></span><span class="nt">Run the bidirectional search, which fills the route and both counters.</span></li>
+<li class="note" data-lines="348"><span class="nl"><a href="#L348">348</a></span><span class="nt">A cost of <code>-1</code> means the two searches never met, so there is no route…</span></li>
+<li class="note" data-lines="349"><span class="nl"><a href="#L349">349</a></span><span class="nt">…say so…</span></li>
+<li class="note" data-lines="350"><span class="nl"><a href="#L350">350</a></span><span class="nt">…and skip on.</span></li>
+<li class="note" data-lines="351"><span class="nl"><a href="#L351">351</a></span><span class="nt">Close the no-route check.</span></li>
+<li class="note" data-lines="353"><span class="nl"><a href="#L353">353</a></span><span class="nt">Print the “BIDIRECTIONAL DIJKSTRA” heading and begin its route line.</span></li>
+<li class="note" data-lines="354"><span class="nl"><a href="#L354">354</a></span><span class="nt">Print that route. Both searches return a shortest route of the same total cost; when several routes tie they can print different paths. For example <code>A4</code> to <code>M1</code> is 77 by two different routes.</span></li>
+<li class="note" data-lines="355"><span class="nl"><a href="#L355">355</a></span><span class="nt">Print the cost. The two searches always agree on the total cost, even when their tied routes differ.</span></li>
+<li class="note" data-lines="356 357"><span class="nl"><a href="#L356">356–357</a></span><span class="nt">Print the settled counts: forward, backward, their total, and the total out of 52. Comparing this with the plain figure shows how much work the two-sided search saved.</span></li>
+<li class="note" data-lines="358"><span class="nl"><a href="#L358">358</a></span><span class="nt">Close the bidirectional block.</span></li>
+<li class="note" data-lines="360"><span class="nl"><a href="#L360">360</a></span><span class="nt">The line claiming both algorithms found the same route. It is unconditional — the program never compares the two routes — so when routes tie it is not literally true. The real guarantee is only that each search returns a shortest route of equal cost.</span></li>
+<li class="note" data-lines="362"><span class="nl"><a href="#L362">362</a></span><span class="nt">Comment: draw the map one more time, now with this route marked.</span></li>
+<li class="note" data-lines="363"><span class="nl"><a href="#L363">363</a></span><span class="nt">A block for the marking locals.</span></li>
+<li class="note" data-lines="364"><span class="nl"><a href="#L364">364</a></span><span class="nt">The mark array, 52 roles.</span></li>
+<li class="note" data-lines="365"><span class="nl"><a href="#L365">365</a></span><span class="nt">Start with every place ordinary (mark 0).</span></li>
+<li class="note" data-lines="366"><span class="nl"><a href="#L366">366</a></span><span class="nt">Mark every place on the route (mark 1).</span></li>
+<li class="note" data-lines="367"><span class="nl"><a href="#L367">367</a></span><span class="nt">Then mark the start as 2 and…</span></li>
+<li class="note" data-lines="368"><span class="nl"><a href="#L368">368</a></span><span class="nt">…the goal as 3. Setting these last means they win over the route mark if either endpoint is on the route (it always is).</span></li>
+<li class="note" data-lines="369"><span class="nl"><a href="#L369">369</a></span><span class="nt">A blank line before the map.</span></li>
+<li class="note" data-lines="370"><span class="nl"><a href="#L370">370</a></span><span class="nt">Draw the marked map: coloured legend, coloured start and goal, green route.</span></li>
+<li class="note" data-lines="371"><span class="nl"><a href="#L371">371</a></span><span class="nt">Close the marking block.</span></li>
+<li class="note" data-lines="372"><span class="nl"><a href="#L372">372</a></span><span class="nt">Close the read-and-route loop, ready for the next pair of locations.</span></li>
+<li class="note" data-lines="374"><span class="nl"><a href="#L374">374</a></span><span class="nt">After the loop ends, print a parting line.</span></li>
+<li class="note" data-lines="375"><span class="nl"><a href="#L375">375</a></span><span class="nt">Return 0 to the operating system, the conventional “finished successfully”.</span></li>
+<li class="note" data-lines="376"><span class="nl"><a href="#L376">376</a></span><span class="nt">The closing brace of <code>main</code>, and the end of the program.</span></li>
+</ul>
+</section>
+
+    <h2 id="data">Data structures</h2>
+    <div class="measure">
+      <p><code>NAME[52][4]</code> holds the 52 names in 4-byte slots — up to three characters plus a terminator, so 208 bytes in all — filled once by <code>buildNames</code>.</p>
+      <p><code>graph[52][52]</code> is the adjacency matrix. Entry <code>graph[u][v]</code> is the distance between <code>u</code> and <code>v</code>, or <code>0</code> for “no road”. It holds 2704 integers; on a machine with 4-byte <code>int</code> that is 10,816 bytes, about 10.8&nbsp;KB. There are 87 roads and each is stored twice (once as <code>graph[u][v]</code>, once as <code>graph[v][u]</code>) for symmetry, so just 174 of the 2704 entries are non-zero — the matrix is 93.6% empty.</p>
+      <p>For 52 locations a matrix beats an edge list on every usability axis: neighbour lookups are a single indexed read, the code stays short, and 10.8&nbsp;KB is nothing here. An adjacency list would use far less memory and suit a much larger, sparser map — but at this size it would only add bookkeeping, and every algorithm in the file reads the graph the same simple way.</p>
+    </div>
+
+    <h2 id="cost">Cost</h2>
+    <div class="measure">
+      <p>Plain <code>dijkstra</code> runs in O(N&sup2;) time, because every round scans all N places for the cheapest unsettled one — about 2700 steps at N&nbsp;=&nbsp;52. It needs O(N) extra space for <code>dist</code>, <code>settled</code> and <code>prev</code>, on top of the O(N&sup2;) graph itself. A heap would lower the time to O((N&nbsp;+&nbsp;E)&nbsp;log&nbsp;N).</p>
+      <p><code>bidirectionalDijkstra</code> runs two searches with the same per-side cost, so it is also O(N&sup2;) here, but it often settles fewer places in total because the searches meet in the middle. On this long, thin map the saving is real but modest, and it shrinks as the two ends get further apart.</p>
+      <p>“Places settled” is how many locations each search finished for good — how far it had to sweep before the answer was proven. Two verified runs:</p>
+      <div class="two-col">
+      <table>
+        <thead><tr><th scope="col">Route</th><th scope="col" class="num">Plain settled</th><th scope="col" class="num">Bidirectional settled</th><th scope="col" class="num">Cost</th></tr></thead>
+        <tbody>
+          <tr><td><code>A1 &rarr; M4</code></td><td class="num">52</td><td class="num">26 forward + 25 backward = 51</td><td class="num">77</td></tr>
+          <tr><td><code>G3 &rarr; K2</code></td><td class="num">34</td><td class="num">14 forward + 12 backward = 26</td><td class="num">28</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>On opposite corners (<code>A1</code> to <code>M4</code>) the two searches together settle 51 of 52 places — barely better than the one-sided search, because each still sweeps most of the map’s length. On <code>G3</code> to <code>K2</code> they settle 26, about a quarter less. The worst case gives almost no saving, which is the honest result rather than the “twice as fast” figure often quoted. The two runs above were captured from this program.</p>
+    </div>
+
+  </main>
+</div>
+<footer class="site-foot">
+  <div class="wrap">
+    <p>A walkthrough of <code>main.c</code> for the DSAL mini project. Line numbers are anchors: <code>docs/index.html#L160</code> opens straight at line 160, and every explanation row links to the line it describes. The page is one self-contained HTML file — no framework, no build step, no external resources — and reads completely with JavaScript disabled.</p>
+  </div>
+</footer>
+<script>
+(function(){
+  var notes=document.querySelectorAll('.note');
+  function paint(n,on){
+    var ls=n.getAttribute('data-lines');
+    if(!ls)return;
+    ls.split(/\s+/).forEach(function(l){
+      var el=document.getElementById('L'+l);
+      if(el)el.classList.toggle('hl',on);
+    });
+  }
+  notes.forEach(function(n){
+    n.addEventListener('mouseenter',function(){paint(n,true);});
+    n.addEventListener('mouseleave',function(){paint(n,false);});
+    n.addEventListener('focusin',function(){paint(n,true);});
+    n.addEventListener('focusout',function(){paint(n,false);});
+  });
+
+  var links=Array.prototype.slice.call(document.querySelectorAll('[data-toc]'));
+  var byId={};
+  links.forEach(function(a){
+    var id=a.getAttribute('href').slice(1);
+    (byId[id]=byId[id]||[]).push(a);
+  });
+  if('IntersectionObserver' in window){
+    var secs=document.querySelectorAll('main h2[id], main section[id]');
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(!e.isIntersecting)return;
+        links.forEach(function(a){a.removeAttribute('aria-current');});
+        (byId[e.target.id]||[]).forEach(function(a){a.setAttribute('aria-current','true');});
+      });
+    },{rootMargin:'-10% 0px -75% 0px',threshold:0});
+    secs.forEach(function(s){io.observe(s);});
+  }
+
+  var svg=document.querySelector('.grid-svg');
+  if(svg && 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var edges=svg.querySelectorAll('.edge');
+    var drawn=false;
+    var draw=function(){
+      if(drawn)return; drawn=true;
+      edges.forEach(function(e){
+        var len=e.getTotalLength();
+        e.style.strokeDasharray=len+' '+len;
+        e.style.strokeDashoffset=len;
+      });
+      svg.getBoundingClientRect();
+      edges.forEach(function(e){
+        var row=parseInt(e.getAttribute('data-row'),10)||0;
+        e.style.transition='stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1) '+(row*0.045)+'s';
+        e.style.strokeDashoffset='0';
+      });
+    };
+    var io2=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){draw();io2.disconnect();}
+      });
+    },{threshold:0.25});
+    io2.observe(svg);
+  }
+})();
+</script>
+</body>
+</html>
