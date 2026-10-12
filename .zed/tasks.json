@@ -1,0 +1,6 @@
+[
+  {
+    "label": "C: Compile and Run",
+    "command": "gcc main.c -Wall -Wextra -o main.exe ; ./main.exe"
+  }
+]
